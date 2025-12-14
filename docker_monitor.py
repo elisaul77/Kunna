@@ -11,7 +11,7 @@ import sys
 from datetime import datetime
 
 # Configuración
-KUNNA_API = "http://localhost:8000/api/services"
+KUNNA_API = "http://kunna-backend:8000/api/services"
 SCAN_INTERVAL = 10  # Segundos entre escaneos
 DEBUG = True
 

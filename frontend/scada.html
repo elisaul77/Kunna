@@ -313,6 +313,7 @@
 
     <script>
         const API_URL = 'http://localhost:8000/api';
+        const WS_URL = 'ws://localhost:8000/ws/traffic';
         let topologyData = null;
         let simulation = null;
         let svg = null;
@@ -320,6 +321,8 @@
         let links = [];
         let nodeElements = null;
         let linkElements = null;
+        let ws = null;
+        let trafficQueue = [];
 
         async function loadTopology() {
             try {
@@ -424,7 +427,8 @@
             const linkGroup = svg.append('g');
             linkElements = linkGroup.selectAll('g')
                 .data(links)
-                .enter().append('g');
+                .enter().append('g')
+                .attr('class', 'link-group');
 
             // Línea base del enlace
             linkElements.append('path')
@@ -434,7 +438,7 @@
                 .attr('stroke-opacity', 0.4)
                 .attr('fill', 'none');
 
-            // Círculo animado que viaja por el enlace (petición)
+            // Círculo animado que viaja por el enlace (petición simulada - será reemplazado por real)
             linkElements.append('circle')
                 .attr('class', 'link-particle')
                 .attr('r', 4)
@@ -442,8 +446,8 @@
                 .attr('opacity', 0)
                 .style('filter', 'drop-shadow(0 0 4px #00d4ff)');
 
-            // Iniciar animación de partículas
-            startParticleAnimation();
+            // NO iniciar animación simulada - solo tráfico real
+            // startParticleAnimation(); // ← DESHABILITADO
 
             // Dibujar nodos
             nodeElements = svg.append('g')
@@ -640,6 +644,162 @@
                 simulation.alpha(0.3).restart();
             }
         });
+
+        // ============= WebSocket para tráfico en tiempo real =============
+        
+        function connectWebSocket() {
+            ws = new WebSocket(WS_URL);
+            
+            ws.onopen = () => {
+                console.log('✅ WebSocket conectado - Monitoreando tráfico en tiempo real');
+            };
+            
+            ws.onmessage = (event) => {
+                const trafficEvent = JSON.parse(event.data);
+                handleTrafficEvent(trafficEvent);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('❌ WebSocket error:', error);
+            };
+            
+            ws.onclose = () => {
+                console.log('🔌 WebSocket desconectado - Reconectando en 3s...');
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        function handleTrafficEvent(event) {
+            console.log('🚦 Tráfico detectado:', event);
+            console.log('   Nodos disponibles:', nodes.map(n => n.name));
+            console.log('   Links disponibles:', links.length);
+            
+            // Encontrar el enlace correspondiente
+            const link = findLinkByServiceNames(event.from, event.to);
+            
+            console.log('   Link encontrado:', link);
+            
+            if (link) {
+                console.log('   ✅ Animando tráfico...');
+                // Animar partícula en la dirección correcta
+                animateRealTraffic(link, event);
+            } else {
+                console.log('   ❌ No se encontró link para', event.from, '->', event.to);
+            }
+        }
+
+        function findLinkByServiceNames(from, to) {
+            console.log('   Buscando link:', from, '->', to);
+            
+            // Si "from" es "external", buscar cualquier link que apunte al servicio "to"
+            if (from === 'external') {
+                const toNode = nodes.find(n => n.name === to || to.includes(n.name));
+                console.log('   toNode encontrado:', toNode);
+                
+                if (toNode && links.length > 0) {
+                    // Retornar el primer link que involucre este nodo
+                    const link = links.find(l => 
+                        l.source.id === toNode.id || l.target.id === toNode.id
+                    );
+                    console.log('   Link seleccionado:', link);
+                    return link;
+                }
+            }
+            
+            // Convertir nombres de servicios a IDs
+            const fromNode = nodes.find(n => n.name === from || from.includes(n.name));
+            const toNode = nodes.find(n => n.name === to || to.includes(n.name));
+            
+            if (!fromNode || !toNode) {
+                console.log('   No se encontraron nodos:', {fromNode, toNode});
+                return null;
+            }
+            
+            return links.find(l => 
+                (l.source.id === fromNode.id && l.target.id === toNode.id) ||
+                (l.source.id === toNode.id && l.target.id === fromNode.id)
+            );
+        }
+
+        function animateRealTraffic(link, event) {
+            console.log('   🎬 Iniciando animación para link:', link);
+            
+            // Determinar color según status code
+            let color = '#00d4ff'; // default
+            if (event.status >= 200 && event.status < 300) color = '#10b981'; // success
+            else if (event.status >= 400 && event.status < 500) color = '#f59e0b'; // warning
+            else if (event.status >= 500) color = '#ef4444'; // error
+            
+            console.log('   Color:', color, 'Status:', event.status);
+            
+            // Encontrar el grupo del link
+            const linkElement = d3.selectAll('.link-group')
+                .filter(d => d === link);
+            
+            console.log('   linkElement encontrado:', !linkElement.empty());
+            
+            if (!linkElement.empty()) {
+                // Crear partícula temporal
+                const particle = linkElement.append('circle')
+                    .attr('class', 'real-traffic-particle')
+                    .attr('r', 6)
+                    .attr('fill', color)
+                    .style('filter', `drop-shadow(0 0 8px ${color})`)
+                    .attr('opacity', 1);
+                
+                console.log('   ✨ Partícula creada');
+                
+                // Animar desde source a target
+                const duration = Math.max(800, Math.min(event.duration * 2, 3000));
+                console.log('   Duración animación:', duration, 'ms');
+                
+                particle.transition()
+                    .duration(duration)
+                    .ease(d3.easeLinear)
+                    .attrTween('transform', function() {
+                        return function(t) {
+                            const source = link.source;
+                            const target = link.target;
+                            const x = source.x + (target.x - source.x) * t;
+                            const y = source.y + (target.y - source.y) * t;
+                            return `translate(${x},${y})`;
+                        };
+                    })
+                    .on('end', function() {
+                        console.log('   ✅ Animación completada');
+                        // Pulso en el nodo destino
+                        const targetNode = nodeElements.filter(d => d.id === link.target.id);
+                        targetNode.select('circle')
+                            .transition()
+                            .duration(200)
+                            .attr('r', 50)
+                            .transition()
+                            .duration(200)
+                            .attr('r', 45);
+                        
+                        // Remover partícula
+                        particle.remove();
+                    });
+                
+                // Hacer el enlace más brillante temporalmente
+                linkElement.select('path')
+                    .transition()
+                    .duration(200)
+                    .attr('stroke', color)
+                    .attr('stroke-opacity', 0.9)
+                    .attr('stroke-width', 5)
+                    .transition()
+                    .duration(1000)
+                    .attr('stroke', '#00d4ff')
+                    .attr('stroke-opacity', 0.4)
+                    .attr('stroke-width', 3);
+            } else {
+                console.log('   ❌ No se pudo encontrar el elemento del link en el DOM');
+            }
+        }
+
+        // Conectar WebSocket al cargar
+        connectWebSocket();
     </script>
 </body>
 </html>

@@ -38,7 +38,8 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
-    network_mode: host
+    networks:
+      - kunna-network
     environment:
       - PYTHONUNBUFFERED=1
 
