@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Instalar dependencias
+RUN pip install --no-cache-dir docker requests
+
+# Copiar script
+COPY docker_monitor.py .
+
+# Dar permisos de ejecución
+RUN chmod +x docker_monitor.py
+
+# Comando por defecto
+CMD ["python", "docker_monitor.py"]

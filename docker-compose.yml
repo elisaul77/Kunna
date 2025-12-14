@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: kunna-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./backend/app.py:/app/app.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    networks:
+      - kunna-network
+
+  frontend:
+    build: ./frontend
+    container_name: kunna-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - kunna-network
+
+  docker-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile.monitor
+    container_name: kunna-docker-monitor
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - PYTHONUNBUFFERED=1
+
+networks:
+  kunna-network:
+    driver: bridge
+
+volumes:
+  data:

@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>kuNNA - Dashboard de Servicios</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        header h1 {
+            font-size: 3.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .btn-add {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+        }
+
+        .btn-add:hover {
+            transform: translateY(-3px) scale(1.05);
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            animation: fadeIn 1s ease;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: var(--card-color, #3b82f6);
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .service-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .service-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .service-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .service-category {
+            display: inline-block;
+            padding: 5px 15px;
+            background: var(--card-color, #3b82f6);
+            color: white;
+            border-radius: 15px;
+            font-size: 0.85em;
+            margin-bottom: 15px;
+        }
+
+        .service-url {
+            color: #667eea;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+
+        .service-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-edit {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #059669;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            animation: slideIn 0.3s;
+        }
+
+        .modal-header {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .btn-submit, .btn-cancel {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-cancel {
+            background: #e5e7eb;
+            color: #666;
+        }
+
+        .btn-cancel:hover {
+            background: #d1d5db;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+        }
+
+        .empty-state h2 {
+            font-size: 2em;
+            margin-bottom: 15px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2.5em;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 kuNNA</h1>
+            <p>Tu ventana de enlaces a todos tus servicios</p>
+        </header>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Buscar servicios...">
+            </div>
+            <div class="filter-buttons" id="filterButtons">
+                <button class="filter-btn active" data-category="all">Todos</button>
+            </div>
+            <button class="btn-add" onclick="openModal()">➕ Agregar Servicio</button>
+        </div>
+
+        <div class="services-grid" id="servicesGrid">
+            <!-- Services will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="serviceModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-header" id="modalTitle">Agregar Servicio</h2>
+            <form id="serviceForm">
+                <input type="hidden" id="serviceId">
+                
+                <div class="form-group">
+                    <label for="serviceName">Nombre del Servicio</label>
+                    <input type="text" id="serviceName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="serviceDescription">Descripción</label>
+                    <textarea id="serviceDescription" rows="3" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="serviceUrl">URL</label>
+                    <input type="url" id="serviceUrl" placeholder="http://localhost:8080" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="serviceIcon">Icono (Emoji)</label>
+                    <input type="text" id="serviceIcon" placeholder="🔗" maxlength="2">
+                </div>
+
+                <div class="form-group">
+                    <label for="serviceCategory">Categoría</label>
+                    <input type="text" id="serviceCategory" placeholder="general" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="serviceColor">Color</label>
+                    <input type="color" id="serviceColor" value="#3b82f6">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-submit">Guardar</button>
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+        let currentFilter = 'all';
+        let allServices = [];
+
+        async function loadServices() {
+            try {
+                const response = await fetch(`${API_URL}/services`);
+                allServices = await response.json();
+                renderServices(allServices);
+                updateFilterButtons();
+            } catch (error) {
+                console.error('Error loading services:', error);
+            }
+        }
+
+        function renderServices(services) {
+            const grid = document.getElementById('servicesGrid');
+            
+            if (services.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <h2>No hay servicios disponibles</h2>
+                        <p>Agrega tu primer servicio para comenzar</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = services.map(service => `
+                <div class="service-card" style="--card-color: ${service.color}" onclick="window.open('${service.url}', '_blank')">
+                    <span class="service-icon">${service.icon || '🔗'}</span>
+                    <h3 class="service-name">${service.name}</h3>
+                    <span class="service-category">${service.category}</span>
+                    <p class="service-description">${service.description}</p>
+                    <div class="service-url">${service.url}</div>
+                    <div class="service-actions" onclick="event.stopPropagation()">
+                        <button class="btn-action btn-edit" onclick="editService('${service.id}')">✏️ Editar</button>
+                        <button class="btn-action btn-delete" onclick="deleteService('${service.id}')">🗑️ Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateFilterButtons() {
+            const categories = [...new Set(allServices.map(s => s.category))];
+            const filterButtons = document.getElementById('filterButtons');
+            
+            filterButtons.innerHTML = `
+                <button class="filter-btn active" data-category="all" onclick="filterByCategory('all')">Todos</button>
+                ${categories.map(cat => `
+                    <button class="filter-btn" data-category="${cat}" onclick="filterByCategory('${cat}')">${cat}</button>
+                `).join('')}
+            `;
+        }
+
+        function filterByCategory(category) {
+            currentFilter = category;
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.category === category);
+            });
+
+            const filtered = category === 'all' 
+                ? allServices 
+                : allServices.filter(s => s.category === category);
+            
+            renderServices(filtered);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filtered = allServices.filter(service => 
+                service.name.toLowerCase().includes(searchTerm) ||
+                service.description.toLowerCase().includes(searchTerm) ||
+                service.category.toLowerCase().includes(searchTerm)
+            );
+            renderServices(filtered);
+        });
+
+        function openModal(service = null) {
+            const modal = document.getElementById('serviceModal');
+            const form = document.getElementById('serviceForm');
+            const title = document.getElementById('modalTitle');
+            
+            if (service) {
+                title.textContent = 'Editar Servicio';
+                document.getElementById('serviceId').value = service.id;
+                document.getElementById('serviceName').value = service.name;
+                document.getElementById('serviceDescription').value = service.description;
+                document.getElementById('serviceUrl').value = service.url;
+                document.getElementById('serviceIcon').value = service.icon || '🔗';
+                document.getElementById('serviceCategory').value = service.category;
+                document.getElementById('serviceColor').value = service.color || '#3b82f6';
+            } else {
+                title.textContent = 'Agregar Servicio';
+                form.reset();
+                document.getElementById('serviceId').value = '';
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('serviceModal').style.display = 'none';
+        }
+
+        async function editService(id) {
+            const service = allServices.find(s => s.id === id);
+            if (service) {
+                openModal(service);
+            }
+        }
+
+        async function deleteService(id) {
+            if (!confirm('¿Estás seguro de eliminar este servicio?')) return;
+            
+            try {
+                await fetch(`${API_URL}/services/${id}`, { method: 'DELETE' });
+                await loadServices();
+            } catch (error) {
+                console.error('Error deleting service:', error);
+                alert('Error al eliminar el servicio');
+            }
+        }
+
+        document.getElementById('serviceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const serviceId = document.getElementById('serviceId').value;
+            const serviceData = {
+                name: document.getElementById('serviceName').value,
+                description: document.getElementById('serviceDescription').value,
+                url: document.getElementById('serviceUrl').value,
+                icon: document.getElementById('serviceIcon').value || '🔗',
+                category: document.getElementById('serviceCategory').value,
+                color: document.getElementById('serviceColor').value,
+                isActive: true
+            };
+
+            try {
+                const url = serviceId ? `${API_URL}/services/${serviceId}` : `${API_URL}/services`;
+                const method = serviceId ? 'PUT' : 'POST';
+                
+                await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(serviceData)
+                });
+
+                closeModal();
+                await loadServices();
+            } catch (error) {
+                console.error('Error saving service:', error);
+                alert('Error al guardar el servicio');
+            }
+        });
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('serviceModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        loadServices();
+    </script>
+</body>
+</html>
