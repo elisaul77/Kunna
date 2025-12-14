@@ -138,23 +138,37 @@ def extract_port_mapping(container):
     return None
 
 def get_running_containers():
-    """Obtiene todos los contenedores en ejecución"""
+    """Obtiene todos los contenedores (corriendo y detenidos)"""
     try:
         client = docker.from_env()
-        containers = client.containers.list()
+        # Obtener TODOS los contenedores (incluyendo detenidos)
+        containers = client.containers.list(all=True)
         
         container_info = []
         for container in containers:
             port = extract_port_mapping(container)
             
-            if port:
-                info = {
-                    'id': container.short_id,
-                    'name': container.name,
-                    'image': container.image.tags[0] if container.image.tags else 'unknown',
-                    'status': container.status,
-                    'port': port
-                }
+            # Obtener labels para detectar grupos/aplicaciones
+            labels = container.labels
+            app_group = labels.get('kunna.app', labels.get('com.docker.compose.project', 'uncategorized'))
+            
+            # Obtener networks para detectar conexiones
+            networks = list(container.attrs['NetworkSettings']['Networks'].keys())
+            
+            info = {
+                'id': container.short_id,
+                'name': container.name,
+                'image': container.image.tags[0] if container.image.tags else 'unknown',
+                'status': container.status,  # running, exited, paused, etc
+                'state': container.attrs['State']['Status'],
+                'port': port,
+                'app_group': app_group,
+                'networks': networks,
+                'health': container.attrs['State'].get('Health', {}).get('Status', 'none'),
+            }
+            
+            # Solo agregar si tiene puerto o está en un grupo de app conocido
+            if port or app_group != 'uncategorized':
                 container_info.append(info)
         
         return container_info
@@ -170,24 +184,32 @@ def sync_containers():
     containers = get_running_containers()
     
     if not containers:
-        log("No se encontraron contenedores con puertos expuestos")
+        log("No se encontraron contenedores")
         return
     
-    log(f"Encontrados {len(containers)} contenedores con puertos")
+    log(f"Encontrados {len(containers)} contenedores")
     
     # Obtener servicios ya registrados
     existing_services = get_existing_services()
     
-    # Registrar nuevos contenedores
+    # Registrar o actualizar contenedores
     for container in containers:
         name = container['name']
         
         # Verificar si ya está registrado
         if name in existing_services:
+            # Actualizar estado si cambió
+            existing = existing_services[name]
+            if existing.get('status') != container['status']:
+                update_service_status(existing['id'], container['status'])
             if DEBUG:
-                log(f"⏭️ {name} ya está registrado", "DEBUG")
+                log(f"⏭️ {name} ya está registrado (estado: {container['status']})", "DEBUG")
             continue
         
+        # Solo registrar contenedores corriendo
+        if container['status'] != 'running':
+            continue
+            
         # Preparar datos del servicio
         category = get_container_category(name)
         icon = get_container_icon(name)
@@ -196,15 +218,32 @@ def sync_containers():
         service_data = {
             'name': name,
             'description': f"Contenedor Docker: {container['image']}",
-            'url': f"http://localhost:{container['port']}",
+            'url': f"http://localhost:{container['port']}" if container['port'] else '#',
             'icon': icon,
             'category': category,
             'color': color,
-            'isActive': True
+            'isActive': True,
+            'status': container['status'],
+            'app_group': container['app_group'],
+            'networks': container['networks'],
         }
         
         # Registrar en kuNNA
         register_service(service_data)
+
+def update_service_status(service_id, status):
+    """Actualiza el estado de un servicio"""
+    try:
+        is_active = status == 'running'
+        response = requests.patch(
+            f"{KUNNA_API}/{service_id}",
+            json={"isActive": is_active, "status": status},
+            timeout=5
+        )
+        if response.status_code == 200:
+            log(f"🔄 Actualizado estado de servicio {service_id}: {status}")
+    except Exception as e:
+        log(f"Error actualizando estado: {e}", "ERROR")
 
 def monitor_loop():
     """Loop principal de monitoreo"""

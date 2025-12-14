@@ -42,5 +42,21 @@
     "color": "#F37626",
     "isActive": true,
     "createdAt": "2025-12-14T18:28:01.813730"
+  },
+  {
+    "id": "5",
+    "name": "kunna-docker-monitor",
+    "description": "Contenedor Docker: kunna_docker-monitor:latest",
+    "url": "#",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "app_group": "kunna",
+    "networks": [
+      "host"
+    ],
+    "createdAt": "2025-12-14T18:51:39.468511"
   }
 ]

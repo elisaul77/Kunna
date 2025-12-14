@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>kuNNA - SCADA Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #16213e;
+            --accent-primary: #00d4ff;
+            --accent-secondary: #a855f7;
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --border-color: #2d3748;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .toolbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toolbar h1 {
+            font-size: 1.8em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .toolbar-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .stats {
+            display: flex;
+            gap: 12px;
+        }
+
+        .stat {
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 70px);
+        }
+
+        .sidebar {
+            width: 300px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            font-size: 1.2em;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+
+        .group-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .group-item {
+            padding: 12px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .group-item:hover {
+            border-color: var(--accent-primary);
+            transform: translateX(4px);
+        }
+
+        .group-item.active {
+            border-color: var(--accent-primary);
+            background: var(--bg-primary);
+        }
+
+        .group-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .group-services {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+        }
+
+        .canvas {
+            flex: 1;
+            position: relative;
+            background: var(--bg-primary);
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 49px, var(--border-color) 49px, var(--border-color) 50px),
+                repeating-linear-gradient(90deg, transparent, transparent 49px, var(--border-color) 49px, var(--border-color) 50px);
+        }
+
+        #topology-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .node {
+            cursor: move;
+        }
+
+        .node-circle {
+            transition: all 0.3s;
+        }
+
+        .node:hover .node-circle {
+            filter: brightness(1.3);
+            r: 45;
+        }
+
+        .node-running {
+            fill: var(--success);
+            filter: drop-shadow(0 0 10px var(--success));
+        }
+
+        .node-stopped {
+            fill: var(--danger);
+            filter: drop-shadow(0 0 10px var(--danger));
+        }
+
+        .node-paused {
+            fill: var(--warning);
+            filter: drop-shadow(0 0 10px var(--warning));
+        }
+
+        .node-label {
+            fill: var(--text-primary);
+            font-size: 12px;
+            font-weight: 600;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        .node-icon {
+            font-size: 24px;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        .link {
+            stroke: var(--accent-primary);
+            stroke-width: 2;
+            stroke-opacity: 0.3;
+            fill: none;
+        }
+
+        .link-active {
+            stroke-opacity: 0.8;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { stroke-opacity: 0.3; }
+            50% { stroke-opacity: 0.8; }
+        }
+
+        .group-boundary {
+            fill: var(--bg-card);
+            fill-opacity: 0.2;
+            stroke: var(--border-color);
+            stroke-width: 2;
+            stroke-dasharray: 5, 5;
+            rx: 20;
+        }
+
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <h1>🎯 kuNNA SCADA Monitor</h1>
+        <div class="stats">
+            <div class="stat">
+                Total: <span class="stat-value" id="total-services">0</span>
+            </div>
+            <div class="stat">
+                Activos: <span class="stat-value" id="active-services">0</span>
+            </div>
+            <div class="stat">
+                Grupos: <span class="stat-value" id="total-groups">0</span>
+            </div>
+        </div>
+        <div class="toolbar-actions">
+            <a href="/" class="btn">← Volver al Dashboard</a>
+            <button class="btn" onclick="refreshTopology()">🔄 Actualizar</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <h2>Grupos de Aplicaciones</h2>
+            <div class="group-list" id="group-list">
+                <!-- Se llena dinámicamente -->
+            </div>
+        </div>
+
+        <div class="canvas">
+            <svg id="topology-svg"></svg>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--success);"></div>
+                    <span>Running</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--danger);"></div>
+                    <span>Stopped</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--warning);"></div>
+                    <span>Paused</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+        let topologyData = null;
+        let simulation = null;
+
+        async function loadTopology() {
+            try {
+                const response = await fetch(`${API_URL}/topology`);
+                topologyData = await response.json();
+                
+                // Actualizar estadísticas
+                document.getElementById('total-services').textContent = topologyData.total_services;
+                document.getElementById('active-services').textContent = topologyData.active_services;
+                document.getElementById('total-groups').textContent = topologyData.groups.length;
+                
+                renderGroups();
+                renderTopology();
+            } catch (error) {
+                console.error('Error loading topology:', error);
+            }
+        }
+
+        function renderGroups() {
+            const groupList = document.getElementById('group-list');
+            groupList.innerHTML = topologyData.groups.map((group, index) => `
+                <div class="group-item ${index === 0 ? 'active' : ''}" onclick="focusGroup('${group.id}')">
+                    <div class="group-name">${group.name}</div>
+                    <div class="group-services">${group.services.length} servicios</div>
+                </div>
+            `).join('');
+        }
+
+        function renderTopology() {
+            const svg = d3.select('#topology-svg');
+            const width = svg.node().getBoundingClientRect().width;
+            const height = svg.node().getBoundingClientRect().height;
+
+            svg.selectAll('*').remove();
+
+            // Preparar datos para D3
+            const nodes = [];
+            const links = [];
+
+            // Crear nodos por servicio
+            topologyData.groups.forEach((group, groupIndex) => {
+                group.services.forEach((service, serviceIndex) => {
+                    nodes.push({
+                        id: service.id,
+                        name: service.name,
+                        status: service.status,
+                        icon: service.icon,
+                        group: group.id,
+                        groupIndex: groupIndex
+                    });
+                });
+            });
+
+            // Crear enlaces
+            topologyData.connections.forEach(conn => {
+                links.push({
+                    source: conn.source,
+                    target: conn.target,
+                    network: conn.network
+                });
+            });
+
+            // Crear simulación de fuerza
+            simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(d => d.id).distance(150))
+                .force('charge', d3.forceManyBody().strength(-400))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(60));
+
+            // Dibujar enlaces
+            const link = svg.append('g')
+                .selectAll('path')
+                .data(links)
+                .enter().append('path')
+                .attr('class', 'link link-active')
+                .attr('stroke', 'var(--accent-primary)');
+
+            // Dibujar nodos
+            const node = svg.append('g')
+                .selectAll('g')
+                .data(nodes)
+                .enter().append('g')
+                .attr('class', 'node')
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
+
+            // Círculos de nodos
+            node.append('circle')
+                .attr('class', d => `node-circle node-${d.status}`)
+                .attr('r', 40);
+
+            // Iconos
+            node.append('text')
+                .attr('class', 'node-icon')
+                .attr('dy', 8)
+                .text(d => d.icon);
+
+            // Etiquetas
+            node.append('text')
+                .attr('class', 'node-label')
+                .attr('dy', 60)
+                .text(d => d.name);
+
+            // Actualizar posiciones
+            simulation.on('tick', () => {
+                link.attr('d', d => {
+                    const dx = d.target.x - d.source.x;
+                    const dy = d.target.y - d.source.y;
+                    const dr = Math.sqrt(dx * dx + dy * dy);
+                    return `M${d.source.x},${d.source.y}A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
+                });
+
+                node.attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+        }
+
+        function focusGroup(groupId) {
+            // Actualizar UI
+            document.querySelectorAll('.group-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.group-item').classList.add('active');
+            
+            // TODO: Hacer zoom al grupo
+            console.log('Focus on group:', groupId);
+        }
+
+        function refreshTopology() {
+            loadTopology();
+        }
+
+        // Auto-refresh cada 5 segundos
+        setInterval(refreshTopology, 5000);
+
+        // Cargar al inicio
+        loadTopology();
+    </script>
+</body>
+</html>

@@ -31,6 +31,9 @@ class Service(BaseModel):
     category: str = "general"
     color: Optional[str] = "#3b82f6"
     isActive: bool = True
+    status: Optional[str] = "running"
+    app_group: Optional[str] = "uncategorized"
+    networks: Optional[List[str]] = []
     createdAt: Optional[str] = None
 
 def load_services():
@@ -134,6 +137,79 @@ def get_categories():
     services = load_services()
     categories = list(set(s.get("category", "general") for s in services))
     return {"categories": sorted(categories)}
+
+@app.get("/api/topology")
+def get_topology():
+    """Obtiene la topología de servicios para visualización SCADA"""
+    services = load_services()
+    
+    # Agrupar por app_group
+    groups = {}
+    connections = []
+    
+    for service in services:
+        app_group = service.get("app_group", "uncategorized")
+        
+        if app_group not in groups:
+            groups[app_group] = {
+                "id": app_group,
+                "name": app_group,
+                "services": []
+            }
+        
+        groups[app_group]["services"].append({
+            "id": service["id"],
+            "name": service["name"],
+            "status": service.get("status", "unknown"),
+            "isActive": service.get("isActive", True),
+            "icon": service.get("icon", "🔗"),
+            "networks": service.get("networks", [])
+        })
+    
+    # Detectar conexiones entre servicios (por redes compartidas)
+    network_map = {}
+    for service in services:
+        for network in service.get("networks", []):
+            if network not in network_map:
+                network_map[network] = []
+            network_map[network].append(service["id"])
+    
+    # Crear conexiones entre servicios en la misma red
+    for network, service_ids in network_map.items():
+        if len(service_ids) > 1:
+            for i, source in enumerate(service_ids):
+                for target in service_ids[i+1:]:
+                    connections.append({
+                        "source": source,
+                        "target": target,
+                        "network": network
+                    })
+    
+    return {
+        "groups": list(groups.values()),
+        "connections": connections,
+        "total_services": len(services),
+        "active_services": len([s for s in services if s.get("isActive", True)])
+    }
+
+@app.patch("/api/services/{service_id}")
+def patch_service(service_id: str, updates: dict):
+    """Actualiza parcialmente un servicio (para estados)"""
+    services = load_services()
+    
+    index = next((i for i, s in enumerate(services) if s["id"] == service_id), None)
+    
+    if index is None:
+        raise HTTPException(status_code=404, detail="Servicio no encontrado")
+    
+    # Actualizar solo los campos proporcionados
+    for key, value in updates.items():
+        if key in services[index]:
+            services[index][key] = value
+    
+    save_services(services)
+    
+    return services[index]
 
 if __name__ == "__main__":
     import uvicorn

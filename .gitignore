@@ -1,0 +1,28 @@
+# kuNNA - Service Dashboard
+
+## Ignorar archivos generados
+data/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+## Node modules (si se agregan)
+node_modules/
+
+## Logs
+*.log
+
+## IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Docker
+.dockerignore
