@@ -8,10 +8,13 @@ from datetime import datetime
 import time
 import asyncio
 
+# Import agent manager
+from agent_manager import agent_manager
+
 app = FastAPI(
     title="kuNNA API",
     description="API para gestionar servicios y enlaces",
-    version="1.0.0"
+    version="2.0.0"
 )
 
 app.add_middleware(
@@ -272,6 +275,172 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+# ============= ENDPOINTS PARA AGENTES REMOTOS =============
+
+@app.websocket("/ws/agent/data")
+async def agent_websocket(websocket: WebSocket):
+    """WebSocket para recibir datos de agentes remotos"""
+    await websocket.accept()
+    server_id = None
+    
+    try:
+        while True:
+            # Recibir mensaje del agente
+            message = await websocket.receive_text()
+            data = json.loads(message)
+            
+            msg_type = data.get('type')
+            
+            if msg_type == 'agent_register':
+                # Registro inicial
+                server_info = data.get('server_info', {})
+                server = await agent_manager.register_agent(server_info, websocket)
+                server_id = server.id
+                
+                # Confirmar registro
+                await websocket.send_json({
+                    "type": "registration_confirmed",
+                    "server_id": server_id,
+                    "message": "Agente registrado correctamente"
+                })
+                
+            elif msg_type == 'agent_data':
+                # Actualización de datos
+                if server_id:
+                    agent_manager.update_agent_data(server_id, data)
+                else:
+                    # Si no está registrado, extraer server_id de los datos
+                    server_info = data.get('server_info', {})
+                    server_id = server_info.get('id')
+                    if server_id:
+                        agent_manager.update_agent_data(server_id, data)
+                        
+    except WebSocketDisconnect:
+        if server_id:
+            agent_manager.disconnect_agent(server_id)
+    except Exception as e:
+        print(f"Error en agent_websocket: {e}")
+        if server_id:
+            agent_manager.disconnect_agent(server_id)
+
+@app.get("/api/remote/servers")
+def get_remote_servers():
+    """Obtiene lista de servidores remotos"""
+    servers = agent_manager.get_all_servers()
+    return {
+        "total": len(servers),
+        "connected": len(agent_manager.get_connected_servers()),
+        "servers": [s.to_dict() for s in servers]
+    }
+
+@app.get("/api/remote/servers/{server_id}")
+def get_remote_server(server_id: str):
+    """Obtiene información de un servidor específico"""
+    server = agent_manager.get_server(server_id)
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor no encontrado")
+    
+    return server.to_dict()
+
+@app.get("/api/remote/containers")
+def get_remote_containers():
+    """Obtiene todos los contenedores de servidores remotos"""
+    containers = agent_manager.get_all_containers()
+    return {
+        "total": len(containers),
+        "containers": containers
+    }
+
+@app.get("/api/remote/metrics")
+def get_remote_metrics():
+    """Obtiene métricas agregadas de todos los servidores"""
+    return agent_manager.get_aggregated_metrics()
+
+@app.get("/api/topology/unified")
+def get_unified_topology():
+    """Obtiene topología unificada: local + remota"""
+    # Servicios locales
+    local_services = load_services()
+    
+    # Contenedores remotos
+    remote_containers = agent_manager.get_all_containers()
+    
+    # Convertir contenedores remotos a formato de servicio
+    remote_services = []
+    for container in remote_containers:
+        remote_services.append({
+            "id": f"remote-{container['server_id']}-{container['id']}",
+            "name": container['name'],
+            "description": f"Remote container on {container['server_hostname']}",
+            "url": f"http://{container['server_ip']}",
+            "icon": "🌐",
+            "category": "remote",
+            "color": "#9333ea",
+            "isActive": container['status'] == 'running',
+            "status": container['status'],
+            "app_group": f"{container['server_hostname']}-{container.get('app_group', 'unknown')}",
+            "networks": container.get('networks', []),
+            "server_id": container['server_id'],
+            "server_hostname": container['server_hostname'],
+            "is_remote": True
+        })
+    
+    # Combinar todos los servicios
+    all_services = local_services + remote_services
+    
+    # Agrupar por app_group
+    groups = {}
+    connections = []
+    
+    for service in all_services:
+        app_group = service.get('app_group', 'uncategorized')
+        
+        if app_group not in groups:
+            groups[app_group] = {
+                "id": app_group,
+                "name": app_group,
+                "services": [],
+                "is_remote": service.get('is_remote', False)
+            }
+        
+        groups[app_group]["services"].append({
+            "id": service["id"],
+            "name": service["name"],
+            "status": service.get("status", "unknown"),
+            "isActive": service.get("isActive", True),
+            "icon": service.get("icon", "🔗"),
+            "networks": service.get("networks", []),
+            "is_remote": service.get("is_remote", False),
+            "server_hostname": service.get("server_hostname", "local")
+        })
+    
+    # Detectar conexiones
+    network_map = {}
+    for service in all_services:
+        for network in service.get("networks", []):
+            if network not in network_map:
+                network_map[network] = []
+            network_map[network].append(service["id"])
+    
+    for network, service_ids in network_map.items():
+        if len(service_ids) > 1:
+            for i, source in enumerate(service_ids):
+                for target in service_ids[i+1:]:
+                    connections.append({
+                        "source": source,
+                        "target": target,
+                        "network": network
+                    })
+    
+    return {
+        "groups": list(groups.values()),
+        "connections": connections,
+        "total_services": len(all_services),
+        "local_services": len(local_services),
+        "remote_services": len(remote_services),
+        "active_services": len([s for s in all_services if s.get("isActive", True)])
+    }
 
 if __name__ == "__main__":
     import uvicorn
