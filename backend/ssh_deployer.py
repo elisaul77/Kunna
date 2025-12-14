@@ -110,38 +110,146 @@ class SSHDeployer:
         """Genera un token único para el agente"""
         return secrets.token_urlsafe(32)
     
-    def deploy_agent(self, central_url: str, token: str, 
-                    image_name: str = "kunna/agent:latest") -> bool:
-        """Despliega el agente kuNNA"""
+    def deploy_agent(self, central_url: str, token: str) -> bool:
+        """Despliega el agente kuNNA usando Python directamente"""
         try:
             # Detener contenedor existente
             print("🛑 Deteniendo agente existente (si existe)...")
-            self.execute_command("sudo docker rm -f kunna-agent", sudo=False)
+            self.execute_command("docker rm -f kunna-agent", sudo=True)
             
             # Obtener hostname
             _, hostname, _ = self.execute_command("hostname")
             hostname = hostname.strip()
             
-            # Construir comando docker run
+            # Crear el código del agente inline
+            agent_code = f'''
+import docker
+import websockets
+import asyncio
+import json
+import psutil
+import time
+from datetime import datetime
+
+CENTRAL_URL = "{central_url}"
+AGENT_TOKEN = "{token}"
+SERVER_ID = "{hostname}"
+HEARTBEAT_INTERVAL = 10
+
+client = docker.from_env()
+
+async def send_data():
+    uri = CENTRAL_URL.replace("http://", "ws://").replace("https://", "wss://")
+    uri = f"{{uri}}/ws/agent"
+    
+    while True:
+        try:
+            async with websockets.connect(uri) as websocket:
+                print(f"✅ Conectado a {{CENTRAL_URL}}")
+                
+                # Handshake
+                await websocket.send(json.dumps({{
+                    "type": "register",
+                    "token": AGENT_TOKEN,
+                    "server_id": SERVER_ID
+                }}))
+                
+                while True:
+                    # Recopilar datos
+                    containers = []
+                    for c in client.containers.list(all=True):
+                        containers.append({{
+                            "id": c.id[:12],
+                            "name": c.name,
+                            "image": c.image.tags[0] if c.image.tags else "unknown",
+                            "status": c.status,
+                            "state": c.attrs.get("State", {{}})
+                        }})
+                    
+                    cpu = psutil.cpu_percent(interval=1)
+                    memory = psutil.virtual_memory()
+                    disk = psutil.disk_usage("/")
+                    
+                    data = {{
+                        "type": "heartbeat",
+                        "server_id": SERVER_ID,
+                        "timestamp": datetime.now().isoformat(),
+                        "containers": containers,
+                        "metrics": {{
+                            "cpu_percent": cpu,
+                            "memory_percent": memory.percent,
+                            "memory_used_gb": round(memory.used / (1024**3), 2),
+                            "memory_total_gb": round(memory.total / (1024**3), 2),
+                            "disk_percent": disk.percent,
+                            "disk_used_gb": round(disk.used / (1024**3), 2),
+                            "disk_total_gb": round(disk.total / (1024**3), 2)
+                        }}
+                    }}
+                    
+                    await websocket.send(json.dumps(data))
+                    await asyncio.sleep(HEARTBEAT_INTERVAL)
+                    
+        except Exception as e:
+            print(f"❌ Error: {{e}}")
+            await asyncio.sleep(5)
+
+if __name__ == "__main__":
+    asyncio.run(send_data())
+'''
+            
+            # Crear directorio
+            print("📁 Creando directorio para el agente...")
+            self.execute_command("sudo mkdir -p /tmp/kunna-agent && sudo chmod 777 /tmp/kunna-agent", sudo=False)
+            
+            # Crear archivo agent.py
+            print("📝 Creando script del agente...")
+            # Escapar comillas para bash
+            agent_code_escaped = agent_code.replace('"', '\\"').replace('$', '\\$')
+            create_file_cmd = f'echo "{agent_code_escaped}" | sudo tee /tmp/kunna-agent/agent.py > /dev/null'
+            exit_code, output, error = self.execute_command(create_file_cmd, sudo=False)
+            
+            if exit_code != 0:
+                print(f"❌ Error creando archivo: {error}")
+                return False
+            
+            # Crear Dockerfile
+            print("🐳 Creando Dockerfile...")
+            dockerfile_content = """FROM python:3.11-slim
+WORKDIR /app
+RUN pip install docker websockets psutil
+COPY agent.py .
+CMD ["python", "agent.py"]
+"""
+            create_dockerfile_cmd = f'echo "{dockerfile_content}" | sudo tee /tmp/kunna-agent/Dockerfile > /dev/null'
+            self.execute_command(create_dockerfile_cmd, sudo=False)
+            
+            # Build imagen
+            print("🔨 Construyendo imagen del agente...")
+            exit_code, output, error = self.execute_command(
+                "cd /tmp/kunna-agent && sudo docker build -t kunna-agent:local .",
+                sudo=False
+            )
+            
+            if exit_code != 0:
+                print(f"❌ Error building: {error}")
+                return False
+            
+            # Run contenedor
+            print("🚀 Desplegando agente...")
             docker_cmd = f"""sudo docker run -d \
                 --name kunna-agent \
                 --restart unless-stopped \
                 -v /var/run/docker.sock:/var/run/docker.sock:ro \
-                -e KUNNA_CENTRAL_URL="{central_url}" \
-                -e KUNNA_AGENT_TOKEN="{token}" \
-                -e KUNNA_SERVER_ID="{hostname}" \
-                -e KUNNA_HEARTBEAT_INTERVAL=10 \
-                {image_name}"""
+                kunna-agent:local"""
             
-            print("🚀 Desplegando agente...")
             exit_code, output, error = self.execute_command(docker_cmd, sudo=False)
             
             if exit_code != 0:
-                print(f"❌ Error desplegando agente: {error}")
+                print(f"❌ Error desplegando: {error}")
                 return False
             
-            # Verificar que esté corriendo
-            time.sleep(2)
+            # Verificar
+            time.sleep(3)
             exit_code, output, _ = self.execute_command("sudo docker ps --filter name=kunna-agent", sudo=False)
             
             if "kunna-agent" in output:
@@ -149,6 +257,8 @@ class SSHDeployer:
                 return True
             else:
                 print("❌ El agente no está corriendo")
+                # Ver logs para debug
+                self.execute_command("sudo docker logs kunna-agent", sudo=False)
                 return False
                 
         except Exception as e:

@@ -57,7 +57,8 @@ class KunnaAgent:
     def connect_docker(self):
         """Conecta con Docker"""
         try:
-            self.docker_client = docker.from_env()
+            # Conectar explícitamente al socket de Docker
+            self.docker_client = docker.DockerClient(base_url='unix:///var/run/docker.sock')
             version = self.docker_client.version()
             self.server_info['docker_version'] = version.get('Version', 'unknown')
             self.log(f"✅ Conectado a Docker: {version.get('Version')}")

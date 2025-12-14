@@ -9,6 +9,8 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     gcc \
+    python3-dev \
+    linux-libc-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar requirements

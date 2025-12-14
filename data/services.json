@@ -58,5 +58,85 @@
       "kunna_kunna-network"
     ],
     "createdAt": "2025-12-14T19:35:48.211630"
+  },
+  {
+    "id": "6",
+    "name": "kunna-backend",
+    "description": "Contenedor Docker: kunna_backend:latest",
+    "url": "http://localhost:8000",
+    "icon": "⚙️",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "app_group": "kunna",
+    "networks": [
+      "kunna_kunna-network"
+    ],
+    "createdAt": "2025-12-14T22:05:39.814616"
+  },
+  {
+    "id": "7",
+    "name": "kunna-frontend",
+    "description": "Contenedor Docker: kunna_frontend:latest",
+    "url": "http://localhost:3000",
+    "icon": "🎨",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "app_group": "kunna",
+    "networks": [
+      "kunna_kunna-network"
+    ],
+    "createdAt": "2025-12-14T22:05:39.817914"
+  },
+  {
+    "id": "8",
+    "name": "kunna-docker-monitor",
+    "description": "Contenedor Docker: kunna_docker-monitor:latest",
+    "url": "#",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "app_group": "kunna",
+    "networks": [
+      "kunna_kunna-network"
+    ],
+    "createdAt": "2025-12-14T22:05:39.821932"
+  },
+  {
+    "id": "9",
+    "name": "mlflow-server",
+    "description": "Contenedor Docker: ghcr.io/mlflow/mlflow:latest",
+    "url": "http://localhost:5000",
+    "icon": "🤖",
+    "category": "ML & AI",
+    "color": "#0194e2",
+    "isActive": true,
+    "status": "running",
+    "app_group": "mlflow",
+    "networks": [
+      "mlflow_default"
+    ],
+    "createdAt": "2025-12-14T22:05:39.825039"
+  },
+  {
+    "id": "10",
+    "name": "jupyter_cadquery",
+    "description": "Contenedor Docker: jupyter_cadquery:custom",
+    "url": "http://localhost:8888",
+    "icon": "📊",
+    "category": "Data Science",
+    "color": "#F37626",
+    "isActive": true,
+    "status": "running",
+    "app_group": "jupyter",
+    "networks": [
+      "jupyter_default"
+    ],
+    "createdAt": "2025-12-14T22:05:39.827994"
   }
 ]
