@@ -205,28 +205,25 @@
 
         .link {
             stroke: var(--accent-primary);
-            stroke-width: 2;
-            stroke-opacity: 0.3;
+            stroke-width: 3;
+            stroke-opacity: 0.4;
             fill: none;
+            transition: stroke-opacity 0.3s;
         }
 
-        .link-active {
-            stroke-opacity: 0.8;
-            animation: pulse 2s infinite;
+        .link-particle {
+            pointer-events: none;
         }
 
-        @keyframes pulse {
-            0%, 100% { stroke-opacity: 0.3; }
-            50% { stroke-opacity: 0.8; }
-        }
-
-        .group-boundary {
-            fill: var(--bg-card);
-            fill-opacity: 0.2;
-            stroke: var(--border-color);
+        .status-badge {
+            stroke: var(--bg-card);
             stroke-width: 2;
-            stroke-dasharray: 5, 5;
-            rx: 20;
+            transition: fill 0.5s;
+        }
+
+        .node {
+            cursor: move;
+            transition: opacity 0.3s;
         }
 
         .legend {
@@ -318,19 +315,32 @@
         const API_URL = 'http://localhost:8000/api';
         let topologyData = null;
         let simulation = null;
+        let svg = null;
+        let nodes = [];
+        let links = [];
+        let nodeElements = null;
+        let linkElements = null;
 
         async function loadTopology() {
             try {
                 const response = await fetch(`${API_URL}/topology`);
-                topologyData = await response.json();
+                const newData = await response.json();
                 
                 // Actualizar estadísticas
-                document.getElementById('total-services').textContent = topologyData.total_services;
-                document.getElementById('active-services').textContent = topologyData.active_services;
-                document.getElementById('total-groups').textContent = topologyData.groups.length;
+                document.getElementById('total-services').textContent = newData.total_services;
+                document.getElementById('active-services').textContent = newData.active_services;
+                document.getElementById('total-groups').textContent = newData.groups.length;
                 
-                renderGroups();
-                renderTopology();
+                // Primera carga - crear gráfico
+                if (!topologyData) {
+                    topologyData = newData;
+                    renderGroups();
+                    initializeTopology();
+                } else {
+                    // Solo actualizar estados sin recrear
+                    updateNodeStates(newData);
+                    topologyData = newData;
+                }
             } catch (error) {
                 console.error('Error loading topology:', error);
             }
@@ -346,16 +356,36 @@
             `).join('');
         }
 
-        function renderTopology() {
-            const svg = d3.select('#topology-svg');
+        function updateNodeStates(newData) {
+            if (!nodeElements) return;
+
+            // Crear mapa de estados nuevos
+            const statusMap = {};
+            newData.groups.forEach(group => {
+                group.services.forEach(service => {
+                    statusMap[service.id] = service.status;
+                });
+            });
+
+            // Actualizar clases de estado en los círculos
+            nodeElements.selectAll('circle')
+                .attr('class', d => {
+                    const newStatus = statusMap[d.id] || d.status;
+                    d.status = newStatus; // Actualizar el dato
+                    return `node-circle node-${newStatus}`;
+                });
+        }
+
+        function initializeTopology() {
+            svg = d3.select('#topology-svg');
             const width = svg.node().getBoundingClientRect().width;
             const height = svg.node().getBoundingClientRect().height;
 
             svg.selectAll('*').remove();
 
             // Preparar datos para D3
-            const nodes = [];
-            const links = [];
+            nodes = [];
+            links = [];
 
             // Crear nodos por servicio
             topologyData.groups.forEach((group, groupIndex) => {
@@ -366,12 +396,13 @@
                         status: service.status,
                         icon: service.icon,
                         group: group.id,
-                        groupIndex: groupIndex
+                        groupIndex: groupIndex,
+                        networks: service.networks
                     });
                 });
             });
 
-            // Crear enlaces
+            // Crear enlaces SOLO entre servicios que comparten red
             topologyData.connections.forEach(conn => {
                 links.push({
                     source: conn.source,
@@ -380,23 +411,42 @@
                 });
             });
 
-            // Crear simulación de fuerza
+            // Crear simulación de fuerza con posiciones iniciales fijas
             simulation = d3.forceSimulation(nodes)
-                .force('link', d3.forceLink(links).id(d => d.id).distance(150))
-                .force('charge', d3.forceManyBody().strength(-400))
+                .force('link', d3.forceLink(links).id(d => d.id).distance(200))
+                .force('charge', d3.forceManyBody().strength(-500))
                 .force('center', d3.forceCenter(width / 2, height / 2))
-                .force('collision', d3.forceCollide().radius(60));
+                .force('collision', d3.forceCollide().radius(70))
+                .force('x', d3.forceX(width / 2).strength(0.05))
+                .force('y', d3.forceY(height / 2).strength(0.05));
 
-            // Dibujar enlaces
-            const link = svg.append('g')
-                .selectAll('path')
+            // Dibujar enlaces primero (debajo de los nodos)
+            const linkGroup = svg.append('g');
+            linkElements = linkGroup.selectAll('g')
                 .data(links)
-                .enter().append('path')
-                .attr('class', 'link link-active')
-                .attr('stroke', 'var(--accent-primary)');
+                .enter().append('g');
+
+            // Línea base del enlace
+            linkElements.append('path')
+                .attr('class', 'link')
+                .attr('stroke', '#00d4ff')
+                .attr('stroke-width', 3)
+                .attr('stroke-opacity', 0.4)
+                .attr('fill', 'none');
+
+            // Círculo animado que viaja por el enlace (petición)
+            linkElements.append('circle')
+                .attr('class', 'link-particle')
+                .attr('r', 4)
+                .attr('fill', '#00d4ff')
+                .attr('opacity', 0)
+                .style('filter', 'drop-shadow(0 0 4px #00d4ff)');
+
+            // Iniciar animación de partículas
+            startParticleAnimation();
 
             // Dibujar nodos
-            const node = svg.append('g')
+            nodeElements = svg.append('g')
                 .selectAll('g')
                 .data(nodes)
                 .enter().append('g')
@@ -404,53 +454,149 @@
                 .call(d3.drag()
                     .on('start', dragstarted)
                     .on('drag', dragged)
-                    .on('end', dragended));
+                    .on('end', dragended))
+                .on('click', onNodeClick);
 
-            // Círculos de nodos
-            node.append('circle')
+            // Círculos de nodos con estado
+            nodeElements.append('circle')
                 .attr('class', d => `node-circle node-${d.status}`)
-                .attr('r', 40);
+                .attr('r', 45);
 
             // Iconos
-            node.append('text')
+            nodeElements.append('text')
                 .attr('class', 'node-icon')
-                .attr('dy', 8)
+                .attr('dy', 10)
+                .style('font-size', '28px')
                 .text(d => d.icon);
 
             // Etiquetas
-            node.append('text')
+            nodeElements.append('text')
                 .attr('class', 'node-label')
-                .attr('dy', 60)
-                .text(d => d.name);
+                .attr('dy', 70)
+                .text(d => d.name.length > 15 ? d.name.substring(0, 15) + '...' : d.name);
 
-            // Actualizar posiciones
-            simulation.on('tick', () => {
-                link.attr('d', d => {
+            // Badge de estado
+            nodeElements.append('circle')
+                .attr('class', 'status-badge')
+                .attr('cx', 30)
+                .attr('cy', -30)
+                .attr('r', 8)
+                .attr('fill', d => getStatusColor(d.status));
+
+            // Actualizar posiciones en cada tick
+            simulation.on('tick', updatePositions);
+
+            // Detener simulación después de un tiempo para estabilizar
+            setTimeout(() => {
+                simulation.alpha(0);
+            }, 3000);
+        }
+
+        function startParticleAnimation() {
+            function animate() {
+                linkElements.selectAll('.link-particle')
+                    .attr('opacity', 0)
+                    .transition()
+                    .duration(0)
+                    .attr('opacity', 1)
+                    .transition()
+                    .duration(2000)
+                    .ease(d3.easeLinear)
+                    .attrTween('transform', function(d) {
+                        return function(t) {
+                            const source = d.source;
+                            const target = d.target;
+                            if (!source || !target) return '';
+                            
+                            const x = source.x + (target.x - source.x) * t;
+                            const y = source.y + (target.y - source.y) * t;
+                            return `translate(${x},${y})`;
+                        };
+                    })
+                    .transition()
+                    .duration(0)
+                    .attr('opacity', 0);
+                
+                setTimeout(animate, 2500);
+            }
+            
+            // Iniciar con delay aleatorio para cada enlace
+            linkElements.each(function(d, i) {
+                setTimeout(() => {
+                    d3.select(this).select('.link-particle').call(() => animate());
+                }, i * 300);
+            });
+        }
+
+        function updatePositions() {
+            // Actualizar enlaces
+            linkElements.select('path')
+                .attr('d', d => {
+                    if (!d.source || !d.target) return '';
                     const dx = d.target.x - d.source.x;
                     const dy = d.target.y - d.source.y;
-                    const dr = Math.sqrt(dx * dx + dy * dy);
+                    const dr = Math.sqrt(dx * dx + dy * dy) * 1.5;
                     return `M${d.source.x},${d.source.y}A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
                 });
 
-                node.attr('transform', d => `translate(${d.x},${d.y})`);
+            // Actualizar nodos
+            nodeElements.attr('transform', d => `translate(${d.x},${d.y})`);
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'running': '#10b981',
+                'exited': '#ef4444',
+                'paused': '#f59e0b'
+            };
+            return colors[status] || '#6b7280';
+        }
+
+        function onNodeClick(event, d) {
+            event.stopPropagation();
+            
+            // Highlight del nodo y sus conexiones
+            nodeElements.style('opacity', n => {
+                return n === d || isConnected(n, d) ? 1 : 0.3;
             });
 
-            function dragstarted(event, d) {
-                if (!event.active) simulation.alphaTarget(0.3).restart();
-                d.fx = d.x;
-                d.fy = d.y;
-            }
+            linkElements.style('opacity', l => {
+                return l.source === d || l.target === d ? 1 : 0.1;
+            });
 
-            function dragged(event, d) {
-                d.fx = event.x;
-                d.fy = event.y;
-            }
+            // Mostrar info
+            console.log('Service:', d.name, 'Status:', d.status, 'Networks:', d.networks);
+        }
 
-            function dragended(event, d) {
-                if (!event.active) simulation.alphaTarget(0);
-                d.fx = null;
-                d.fy = null;
-            }
+        function isConnected(node1, node2) {
+            return links.some(l => 
+                (l.source.id === node1.id && l.target.id === node2.id) ||
+                (l.source.id === node2.id && l.target.id === node1.id)
+            );
+        }
+
+        // Click en canvas para quitar highlight
+        d3.select('#topology-svg').on('click', () => {
+            nodeElements.style('opacity', 1);
+            linkElements.style('opacity', 1);
+        });
+
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.1).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            // Mantener posición fija después de arrastrar
+            // d.fx = null;
+            // d.fy = null;
         }
 
         function focusGroup(groupId) {
@@ -460,19 +606,40 @@
             });
             event.target.closest('.group-item').classList.add('active');
             
-            // TODO: Hacer zoom al grupo
-            console.log('Focus on group:', groupId);
+            // Highlight servicios del grupo
+            const groupServices = topologyData.groups.find(g => g.id === groupId)?.services || [];
+            const serviceIds = groupServices.map(s => s.id);
+            
+            nodeElements.style('opacity', n => {
+                return serviceIds.includes(n.id) ? 1 : 0.2;
+            });
+
+            linkElements.style('opacity', l => {
+                return serviceIds.includes(l.source.id) || serviceIds.includes(l.target.id) ? 1 : 0.1;
+            });
         }
 
         function refreshTopology() {
             loadTopology();
         }
 
-        // Auto-refresh cada 5 segundos
+        // Auto-refresh cada 5 segundos (solo estados, no recrea gráfico)
         setInterval(refreshTopology, 5000);
 
         // Cargar al inicio
         loadTopology();
+
+        // Responsive - redimensionar canvas
+        window.addEventListener('resize', () => {
+            if (simulation) {
+                const svg = d3.select('#topology-svg');
+                const width = svg.node().getBoundingClientRect().width;
+                const height = svg.node().getBoundingClientRect().height;
+                
+                simulation.force('center', d3.forceCenter(width / 2, height / 2));
+                simulation.alpha(0.3).restart();
+            }
+        });
     </script>
 </body>
 </html>

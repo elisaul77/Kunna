@@ -20,6 +20,8 @@ services:
     container_name: kunna-frontend
     ports:
       - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
     depends_on:
       - backend
     restart: unless-stopped
