@@ -65,15 +65,9 @@ async def track_requests(request: Request, call_next):
             "timestamp": datetime.now().isoformat()
         }
         
-        # Log para debug
-        print(f"🚦 Evento capturado: {request.method} {request.url.path} - {response.status_code}")
-        print(f"   Clientes conectados: {len(manager.active_connections)}")
-        
         # Broadcast a clientes WebSocket
         if manager.active_connections:
             asyncio.create_task(manager.broadcast(event))
-        else:
-            print("   ⚠️ No hay clientes WebSocket conectados")
     
     return response
 

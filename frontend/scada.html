@@ -670,39 +670,25 @@
         }
 
         function handleTrafficEvent(event) {
-            console.log('🚦 Tráfico detectado:', event);
-            console.log('   Nodos disponibles:', nodes.map(n => n.name));
-            console.log('   Links disponibles:', links.length);
+            console.log('🚦 Tráfico en tiempo real:', event.method, event.path, '→', event.status);
             
             // Encontrar el enlace correspondiente
             const link = findLinkByServiceNames(event.from, event.to);
             
-            console.log('   Link encontrado:', link);
-            
             if (link) {
-                console.log('   ✅ Animando tráfico...');
-                // Animar partícula en la dirección correcta
                 animateRealTraffic(link, event);
-            } else {
-                console.log('   ❌ No se encontró link para', event.from, '->', event.to);
             }
         }
 
         function findLinkByServiceNames(from, to) {
-            console.log('   Buscando link:', from, '->', to);
-            
             // Si "from" es "external", buscar cualquier link que apunte al servicio "to"
             if (from === 'external') {
                 const toNode = nodes.find(n => n.name === to || to.includes(n.name));
-                console.log('   toNode encontrado:', toNode);
                 
                 if (toNode && links.length > 0) {
-                    // Retornar el primer link que involucre este nodo
-                    const link = links.find(l => 
+                    return links.find(l => 
                         l.source.id === toNode.id || l.target.id === toNode.id
                     );
-                    console.log('   Link seleccionado:', link);
-                    return link;
                 }
             }
             
@@ -710,10 +696,7 @@
             const fromNode = nodes.find(n => n.name === from || from.includes(n.name));
             const toNode = nodes.find(n => n.name === to || to.includes(n.name));
             
-            if (!fromNode || !toNode) {
-                console.log('   No se encontraron nodos:', {fromNode, toNode});
-                return null;
-            }
+            if (!fromNode || !toNode) return null;
             
             return links.find(l => 
                 (l.source.id === fromNode.id && l.target.id === toNode.id) ||
@@ -722,21 +705,15 @@
         }
 
         function animateRealTraffic(link, event) {
-            console.log('   🎬 Iniciando animación para link:', link);
-            
             // Determinar color según status code
             let color = '#00d4ff'; // default
             if (event.status >= 200 && event.status < 300) color = '#10b981'; // success
             else if (event.status >= 400 && event.status < 500) color = '#f59e0b'; // warning
             else if (event.status >= 500) color = '#ef4444'; // error
             
-            console.log('   Color:', color, 'Status:', event.status);
-            
             // Encontrar el grupo del link
             const linkElement = d3.selectAll('.link-group')
                 .filter(d => d === link);
-            
-            console.log('   linkElement encontrado:', !linkElement.empty());
             
             if (!linkElement.empty()) {
                 // Crear partícula temporal
@@ -747,11 +724,8 @@
                     .style('filter', `drop-shadow(0 0 8px ${color})`)
                     .attr('opacity', 1);
                 
-                console.log('   ✨ Partícula creada');
-                
                 // Animar desde source a target
                 const duration = Math.max(800, Math.min(event.duration * 2, 3000));
-                console.log('   Duración animación:', duration, 'ms');
                 
                 particle.transition()
                     .duration(duration)
@@ -766,7 +740,6 @@
                         };
                     })
                     .on('end', function() {
-                        console.log('   ✅ Animación completada');
                         // Pulso en el nodo destino
                         const targetNode = nodeElements.filter(d => d.id === link.target.id);
                         targetNode.select('circle')
@@ -793,8 +766,6 @@
                     .attr('stroke', '#00d4ff')
                     .attr('stroke-opacity', 0.4)
                     .attr('stroke-width', 3);
-            } else {
-                console.log('   ❌ No se pudo encontrar el elemento del link en el DOM');
             }
         }
 
