@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servidores Remotos - kuNNA Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #121827;
+            --bg-card: #1a2332;
+            --accent-primary: #00d4ff;
+            --accent-secondary: #7c3aed;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --border-color: rgba(148, 163, 184, 0.1);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        h1 {
+            font-size: 2rem;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: var(--bg-card);
+            color: var(--accent-primary);
+        }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent-primary);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .servers-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .server-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .server-card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.1);
+        }
+
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .server-info h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .server-meta {
+            display: flex;
+            gap: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-online {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status-offline {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .server-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-primary);
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .server-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            color: var(--accent-primary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--accent-primary);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--bg-primary);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌐 Servidores Remotos</h1>
+            <div class="nav-links">
+                <a href="/index.html">📊 Dashboard</a>
+                <a href="/scada.html">🎯 SCADA</a>
+                <a href="/servers.html" class="active">🖥️ Servidores</a>
+            </div>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-total">0</div>
+                <div class="stat-label">Total Servidores</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-connected">0</div>
+                <div class="stat-label">Conectados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-containers">0</div>
+                <div class="stat-label">Contenedores Remotos</div>
+            </div>
+        </div>
+
+        <div class="actions-bar">
+            <h2>Mis Servidores</h2>
+            <button class="btn btn-primary" onclick="openAddServerModal()">
+                ➕ Agregar Servidor
+            </button>
+        </div>
+
+        <div id="servers-container">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Cargando servidores...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Agregar Servidor -->
+    <div id="addServerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Agregar Servidor Remoto</h2>
+                <button class="close-btn" onclick="closeAddServerModal()">&times;</button>
+            </div>
+            
+            <form id="addServerForm" onsubmit="deployAgent(event)">
+                <div class="form-group">
+                    <label>IP del Servidor *</label>
+                    <input type="text" id="server-ip" placeholder="192.168.x.100" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Puerto SSH</label>
+                    <input type="number" id="server-port" value="22" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Usuario SSH *</label>
+                    <input type="text" id="server-user" placeholder="ubuntu" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Método de Autenticación</label>
+                    <select id="auth-method" style="width: 100%; padding: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" onchange="toggleAuthMethod()">
+                        <option value="password">Contraseña</option>
+                        <option value="key">Llave SSH</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="password-group">
+                    <label>Contraseña SSH *</label>
+                    <input type="password" id="server-password" placeholder="••••••••">
+                </div>
+
+                <div class="form-group" id="key-group" style="display: none;">
+                    <label>Llave SSH Privada</label>
+                    <textarea id="server-key" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddServerModal()">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        🚀 Desplegar Agente
+                    </button>
+                </div>
+            </form>
+
+            <div id="deployment-progress" style="display: none; margin-top: 2rem;">
+                <h3 style="margin-bottom: 1rem;">Desplegando agente...</h3>
+                <div id="deployment-logs" style="background: var(--bg-primary); padding: 1rem; border-radius: 8px; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.875rem;">
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+
+        // Cargar servidores al inicio
+        loadServers();
+        setInterval(loadServers, 10000); // Actualizar cada 10s
+
+        function toggleAuthMethod() {
+            const method = document.getElementById('auth-method').value;
+            document.getElementById('password-group').style.display = method === 'password' ? 'block' : 'none';
+            document.getElementById('key-group').style.display = method === 'key' ? 'block' : 'none';
+        }
+
+        async function loadServers() {
+            try {
+                const response = await fetch(`${API_URL}/remote/servers`);
+                const data = await response.json();
+                
+                // Actualizar stats
+                document.getElementById('stat-total').textContent = data.total;
+                document.getElementById('stat-connected').textContent = data.connected;
+                
+                // Cargar métricas
+                const metricsResponse = await fetch(`${API_URL}/remote/metrics`);
+                const metrics = await metricsResponse.json();
+                document.getElementById('stat-containers').textContent = metrics.total_containers;
+                
+                // Renderizar servidores
+                renderServers(data.servers);
+            } catch (error) {
+                console.error('Error cargando servidores:', error);
+                document.getElementById('servers-container').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <p>Error cargando servidores</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderServers(servers) {
+            const container = document.getElementById('servers-container');
+            
+            if (servers.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>No hay servidores remotos</h3>
+                        <p>Agrega tu primer servidor para empezar a monitorear</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '<div class="servers-grid">' + servers.map(server => `
+                <div class="server-card">
+                    <div class="server-header">
+                        <div class="server-info">
+                            <h3>
+                                ${server.connected ? '🟢' : '🔴'} ${server.hostname}
+                            </h3>
+                            <div class="server-meta">
+                                <span>📍 ${server.ip}</span>
+                                <span>💻 ${server.os || 'Unknown'}</span>
+                                <span>🐳 ${server.docker_version || 'N/A'}</span>
+                            </div>
+                        </div>
+                        <span class="status-badge ${server.connected ? 'status-online' : 'status-offline'}">
+                            ${server.connected ? 'Online' : 'Offline'}
+                        </span>
+                    </div>
+
+                    ${server.metrics && Object.keys(server.metrics).length > 0 ? `
+                    <div class="server-metrics">
+                        <div class="metric">
+                            <div class="metric-value">${server.metrics.cpu_percent?.toFixed(1) || '0'}%</div>
+                            <div class="metric-label">CPU</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${server.metrics.memory_percent?.toFixed(1) || '0'}%</div>
+                            <div class="metric-label">RAM</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${server.metrics.disk_percent?.toFixed(1) || '0'}%</div>
+                            <div class="metric-label">Disk</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">${server.containers_count || 0}</div>
+                            <div class="metric-label">Containers</div>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div class="server-actions">
+                        <button class="btn btn-secondary" onclick="viewServerDetails('${server.id}')">
+                            👁️ Ver Detalles
+                        </button>
+                        ${!server.connected ? `
+                        <button class="btn btn-success" onclick="reconnectServer('${server.id}')">
+                            🔄 Reconectar
+                        </button>
+                        ` : ''}
+                        <button class="btn btn-danger" onclick="removeServer('${server.id}')">
+                            🗑️ Eliminar
+                        </button>
+                    </div>
+                </div>
+            `).join('') + '</div>';
+        }
+
+        function openAddServerModal() {
+            document.getElementById('addServerModal').classList.add('active');
+        }
+
+        function closeAddServerModal() {
+            document.getElementById('addServerModal').classList.remove('active');
+            document.getElementById('addServerForm').reset();
+            document.getElementById('deployment-progress').style.display = 'none';
+        }
+
+        async function deployAgent(event) {
+            event.preventDefault();
+            
+            const ip = document.getElementById('server-ip').value;
+            const port = document.getElementById('server-port').value;
+            const user = document.getElementById('server-user').value;
+            const authMethod = document.getElementById('auth-method').value;
+            const password = document.getElementById('server-password').value;
+            const sshKey = document.getElementById('server-key').value;
+
+            // Mostrar progreso
+            document.getElementById('deployment-progress').style.display = 'block';
+            const logsDiv = document.getElementById('deployment-logs');
+            logsDiv.innerHTML = '';
+
+            function addLog(message) {
+                logsDiv.innerHTML += `<div>${message}</div>`;
+                logsDiv.scrollTop = logsDiv.scrollHeight;
+            }
+
+            try {
+                addLog('🔍 Conectando al servidor...');
+                document.getElementById('progress-fill').style.width = '20%';
+                
+                // TODO: Implementar llamada real al backend
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                addLog('✅ Conexión establecida');
+                document.getElementById('progress-fill').style.width = '40%';
+                
+                addLog('📦 Verificando Docker...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                addLog('✅ Docker encontrado');
+                document.getElementById('progress-fill').style.width = '60%';
+                
+                addLog('🚀 Desplegando kuNNA Agent...');
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                addLog('✅ Agente desplegado correctamente');
+                document.getElementById('progress-fill').style.width = '80%';
+                
+                addLog('🔗 Esperando conexión del agente...');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                addLog('✅ Agente conectado!');
+                document.getElementById('progress-fill').style.width = '100%';
+                
+                addLog('');
+                addLog('🎉 Deployment completado exitosamente!');
+                
+                setTimeout(() => {
+                    closeAddServerModal();
+                    loadServers();
+                }, 2000);
+                
+            } catch (error) {
+                addLog(`❌ Error: ${error.message}`);
+                document.getElementById('progress-fill').style.width = '100%';
+                document.getElementById('progress-fill').style.background = 'var(--danger)';
+            }
+        }
+
+        function viewServerDetails(serverId) {
+            window.location.href = `/scada.html?server=${serverId}`;
+        }
+
+        function reconnectServer(serverId) {
+            alert('Función de reconexión en desarrollo');
+        }
+
+        function removeServer(serverId) {
+            if (confirm('¿Estás seguro de eliminar este servidor?')) {
+                // TODO: Implementar eliminación
+                alert('Servidor eliminado (simulado)');
+                loadServers();
+            }
+        }
+    </script>
+</body>
+</html>
