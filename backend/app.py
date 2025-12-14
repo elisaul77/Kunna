@@ -8,8 +8,9 @@ from datetime import datetime
 import time
 import asyncio
 
-# Import agent manager
+# Import agent manager and ssh deployer
 from agent_manager import agent_manager
+from ssh_deployer import deployer
 
 app = FastAPI(
     title="kuNNA API",
@@ -356,6 +357,48 @@ def get_remote_containers():
 def get_remote_metrics():
     """Obtiene métricas agregadas de todos los servidores"""
     return agent_manager.get_aggregated_metrics()
+
+# ============= DEPLOYMENT ENDPOINTS =============
+
+class DeploymentRequest(BaseModel):
+    host: str
+    port: int = 22
+    username: str
+    auth_method: str = "password"  # "password" or "key"
+    password: Optional[str] = None
+    private_key: Optional[str] = None
+    central_url: Optional[str] = "ws://localhost:8000"
+
+@app.post("/api/remote/deploy")
+async def deploy_agent_endpoint(request: DeploymentRequest):
+    """Despliega un agente en un servidor remoto via SSH"""
+    
+    # Validar autenticación
+    if request.auth_method == "password" and not request.password:
+        raise HTTPException(status_code=400, detail="Password requerido")
+    if request.auth_method == "key" and not request.private_key:
+        raise HTTPException(status_code=400, detail="Private key requerida")
+    
+    # Ejecutar deployment
+    result = deployer.full_deployment(
+        host=request.host,
+        port=request.port,
+        username=request.username,
+        password=request.password,
+        private_key=request.private_key,
+        central_url=request.central_url
+    )
+    
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["message"])
+    
+    return {
+        "success": True,
+        "message": result["message"],
+        "token": result["token"],
+        "steps": result["steps"],
+        "agent_will_connect_to": request.central_url
+    }
 
 @app.get("/api/topology/unified")
 def get_unified_topology():
