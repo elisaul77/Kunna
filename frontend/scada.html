@@ -984,8 +984,6 @@
                 is_temporary: true,
                 x: width / 2 + (Math.random() - 0.5) * 200,
                 y: height / 2 + (Math.random() - 0.5) * 200,
-                fx: width / 2 + (Math.random() - 0.5) * 200,  // Fijar posición
-                fy: height / 2 + (Math.random() - 0.5) * 200,
                 vx: 0,
                 vy: 0
             };
@@ -994,35 +992,38 @@
             
             // Actualizar la simulación con el nuevo nodo
             simulation.nodes(nodes);
-            simulation.alpha(0.1).restart();
+            simulation.alpha(0.3).restart();
             
-            // Agregar visualmente al SVG (al grupo de nodos correcto)
-            if (!nodeElements || nodeElements.empty()) {
-                console.warn('⚠️  nodeElements no disponible');
-                return tempNode;
-            }
+            // Agregar visualmente al SVG como parte de nodeElements
+            const nodeGroup = d3.select(nodeElements.node().parentNode);
             
-            const newNodeGroup = d3.select(nodeElements.node().parentNode)
-                .append('g')
+            const newNode = nodeGroup.append('g')
                 .datum(tempNode)
                 .attr('class', 'node temp-node')
-                .attr('transform', `translate(${tempNode.x},${tempNode.y})`);
+                .attr('transform', `translate(${tempNode.x},${tempNode.y})`)
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
             
-            newNodeGroup.append('circle')
+            newNode.append('circle')
                 .attr('class', 'node-circle node-unknown')
                 .attr('r', 40)
                 .style('opacity', 0.6)
                 .style('stroke-dasharray', '5,5');
             
-            newNodeGroup.append('text')
+            newNode.append('text')
                 .attr('class', 'node-icon')
                 .attr('y', 8)
                 .text('🌐');
             
-            newNodeGroup.append('text')
+            newNode.append('text')
                 .attr('class', 'node-label')
                 .attr('y', 60)
                 .text(serviceName);
+            
+            // Actualizar la selección de nodeElements para incluir el nuevo nodo
+            nodeElements = d3.selectAll('.node');
             
             console.log(`🆕 Nodo temporal creado: ${serviceName}`);
             
