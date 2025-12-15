@@ -90,6 +90,9 @@ class Service(BaseModel):
     app_group: Optional[str] = "uncategorized"
     networks: Optional[List[str]] = []
     createdAt: Optional[str] = None
+    is_remote: Optional[bool] = False
+    server_id: Optional[str] = None
+    server_hostname: Optional[str] = None
 
 def load_services():
     if os.path.exists(DATA_FILE):
@@ -127,7 +130,31 @@ def health_check():
 
 @app.get("/api/services", response_model=List[Service])
 def get_services(category: Optional[str] = None, active: Optional[bool] = None):
+    # Servicios locales del archivo JSON
     services = load_services()
+    
+    # Agregar servicios remotos de los agentes
+    remote_containers = agent_manager.get_all_containers()
+    for container in remote_containers:
+        # Convertir contenedor remoto a formato de servicio
+        remote_service = {
+            "id": f"remote-{container['server_id']}-{container['id']}",
+            "name": container['name'],
+            "description": f"Remote: {container['image']} on {container['server_hostname']}",
+            "url": f"http://{container['server_ip']}",
+            "icon": "🌐",
+            "category": "Remote Services",
+            "color": "#9333ea",
+            "isActive": container['status'] == 'running',
+            "status": container['status'],
+            "app_group": f"{container['server_hostname']}-{container.get('app_group', 'unknown')}",
+            "networks": container.get('networks', []),
+            "is_remote": True,
+            "server_id": container['server_id'],
+            "server_hostname": container['server_hostname'],
+            "createdAt": None
+        }
+        services.append(remote_service)
     
     if category:
         services = [s for s in services if s.get("category") == category]
