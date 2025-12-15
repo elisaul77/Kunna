@@ -136,14 +136,30 @@ def get_services(category: Optional[str] = None, active: Optional[bool] = None):
     # Agregar servicios remotos de los agentes
     remote_containers = agent_manager.get_all_containers()
     for container in remote_containers:
-        # Extraer primer puerto expuesto (formato: "HostPort:ContainerPort")
+        # Extraer puertos expuestos (formato: "HostPort:ContainerPort")
         ports = container.get('ports', [])
-        port = ports[0].split(':')[0] if ports else None
+        
+        # Priorizar puertos HTTP comunes (80, 443, 8080, 8443, 3000, 5000, etc.)
+        http_ports = ['80', '443', '8080', '8443', '3000', '5000', '5678']
+        selected_port = None
+        
+        if ports:
+            # Buscar puerto HTTP común
+            for port_mapping in ports:
+                host_port = port_mapping.split(':')[0]
+                if host_port in http_ports:
+                    selected_port = host_port
+                    break
+            
+            # Si no hay puerto HTTP común, usar el primero
+            if not selected_port:
+                selected_port = ports[0].split(':')[0]
         
         # Construir URL usando la IP real del servidor (server_id) y el puerto expuesto
-        if port:
-            url = f"http://{container['server_id']}:{port}"
+        if selected_port:
+            url = f"http://{container['server_id']}:{selected_port}"
         else:
+            # Sin puerto expuesto - servicio interno
             url = f"http://{container['server_id']}"
         
         # Convertir contenedor remoto a formato de servicio
