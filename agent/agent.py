@@ -162,6 +162,96 @@ class KunnaAgent:
             "timestamp": datetime.now().isoformat()
         }
     
+    async def send_heartbeat(self, websocket):
+        """Envía datos periódicamente al servidor central"""
+        while True:
+            try:
+                payload = self.build_payload()
+                await websocket.send(json.dumps(payload))
+                self.log(f"📊 Datos enviados: {len(payload['containers'])} contenedores")
+                await asyncio.sleep(HEARTBEAT_INTERVAL)
+            except Exception as e:
+                self.log(f"Error enviando heartbeat: {e}", "ERROR")
+                raise
+    
+    async def receive_commands(self, websocket):
+        """Recibe y procesa comandos del servidor central"""
+        while True:
+            try:
+                message = await websocket.recv()
+                data = json.loads(message)
+                
+                msg_type = data.get('type')
+                
+                if msg_type == 'container_control':
+                    # Comando de control de contenedor
+                    action = data.get('action')
+                    container_id = data.get('container_id')
+                    
+                    self.log(f"🎮 Comando recibido: {action} en {container_id}")
+                    
+                    response = await self.handle_container_control(action, container_id)
+                    await websocket.send(json.dumps(response))
+                    
+                else:
+                    self.log(f"⚠️  Tipo de mensaje desconocido: {msg_type}", "WARNING")
+                    
+            except Exception as e:
+                self.log(f"Error recibiendo comandos: {e}", "ERROR")
+                raise
+    
+    async def handle_container_control(self, action: str, container_id: str):
+        """Maneja comandos de control de contenedores"""
+        try:
+            container = self.client.containers.get(container_id)
+            
+            if action == 'start':
+                container.start()
+                self.log(f"✅ Contenedor {container.name} iniciado")
+                return {
+                    "status": "success",
+                    "message": f"Contenedor {container.name} iniciado",
+                    "container_id": container_id
+                }
+            
+            elif action == 'stop':
+                container.stop(timeout=10)
+                self.log(f"🛑 Contenedor {container.name} detenido")
+                return {
+                    "status": "success",
+                    "message": f"Contenedor {container.name} detenido",
+                    "container_id": container_id
+                }
+            
+            elif action == 'restart':
+                container.restart(timeout=10)
+                self.log(f"🔄 Contenedor {container.name} reiniciado")
+                return {
+                    "status": "success",
+                    "message": f"Contenedor {container.name} reiniciado",
+                    "container_id": container_id
+                }
+            
+            else:
+                return {
+                    "status": "error",
+                    "error": f"Acción desconocida: {action}",
+                    "container_id": container_id
+                }
+        
+        except docker.errors.NotFound:
+            return {
+                "status": "error",
+                "error": f"Contenedor no encontrado: {container_id}",
+                "container_id": container_id
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "container_id": container_id
+            }
+    
     async def send_data(self):
         """Envía datos al servidor central"""
         ws_url = f"{CENTRAL_URL}/ws/agent/data"
@@ -184,13 +274,19 @@ class KunnaAgent:
                     await websocket.send(json.dumps(registration))
                     self.log(f"📡 Agente registrado: {SERVER_ID}")
                     
-                    # Loop de heartbeat
-                    while True:
-                        payload = self.build_payload()
-                        await websocket.send(json.dumps(payload))
-                        self.log(f"📊 Datos enviados: {len(payload['containers'])} contenedores")
-                        
-                        await asyncio.sleep(HEARTBEAT_INTERVAL)
+                    # Crear tareas concurrentes para enviar datos y recibir comandos
+                    send_task = asyncio.create_task(self.send_heartbeat(websocket))
+                    receive_task = asyncio.create_task(self.receive_commands(websocket))
+                    
+                    # Esperar a que alguna tarea termine (usualmente por error)
+                    done, pending = await asyncio.wait(
+                        [send_task, receive_task],
+                        return_when=asyncio.FIRST_COMPLETED
+                    )
+                    
+                    # Cancelar tareas pendientes
+                    for task in pending:
+                        task.cancel()
                         
             except websockets.exceptions.ConnectionClosed:
                 self.log("🔌 Conexión cerrada, reconectando en 5s...", "WARNING")

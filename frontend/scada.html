@@ -269,6 +269,117 @@
             background: var(--accent-primary);
             border-radius: 4px;
         }
+
+        .node-control-panel {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            min-width: 300px;
+            max-width: 400px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .node-control-panel.visible {
+            display: block;
+        }
+
+        .control-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .control-panel-title {
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+
+        .close-panel {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .close-panel:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .control-panel-info {
+            margin-bottom: 16px;
+        }
+
+        .control-panel-info p {
+            margin: 8px 0;
+            font-size: 0.9em;
+            color: var(--text-secondary);
+        }
+
+        .control-panel-info strong {
+            color: var(--text-primary);
+        }
+
+        .control-panel-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-btn {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .control-btn.start:hover:not(:disabled) {
+            background: #10b981;
+            border-color: #10b981;
+        }
+
+        .control-btn.stop:hover:not(:disabled) {
+            background: #f59e0b;
+            border-color: #f59e0b;
+        }
+
+        .control-btn.restart:hover:not(:disabled) {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
     </style>
 </head>
 <body>
@@ -302,6 +413,20 @@
 
         <div class="canvas">
             <svg id="topology-svg"></svg>
+            
+            <!-- Panel de control de contenedor -->
+            <div class="node-control-panel" id="controlPanel">
+                <div class="control-panel-header">
+                    <div class="control-panel-title" id="panelTitle">Control de Contenedor</div>
+                    <button class="close-panel" onclick="closeControlPanel()">×</button>
+                </div>
+                <div class="control-panel-info" id="panelInfo">
+                    <!-- Se llena dinámicamente -->
+                </div>
+                <div class="control-panel-actions" id="panelActions">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
             
             <div class="legend">
                 <div class="legend-item">
@@ -587,8 +712,121 @@
                 return l.source === d || l.target === d ? 1 : 0.1;
             });
 
-            // Mostrar info
-            console.log('Service:', d.name, 'Status:', d.status, 'Networks:', d.networks);
+            // Mostrar panel de control
+            showControlPanel(d);
+        }
+
+        function showControlPanel(node) {
+            const panel = document.getElementById('controlPanel');
+            const panelTitle = document.getElementById('panelTitle');
+            const panelInfo = document.getElementById('panelInfo');
+            const panelActions = document.getElementById('panelActions');
+            
+            // Título
+            panelTitle.textContent = node.name;
+            
+            // Información
+            const statusColor = getStatusColor(node.status);
+            const serverInfo = node.server_hostname ? `<p><strong>Servidor:</strong> ${node.server_hostname}</p>` : '';
+            const networksInfo = node.networks && node.networks.length > 0 
+                ? `<p><strong>Redes:</strong> ${node.networks.join(', ')}</p>` 
+                : '';
+            
+            panelInfo.innerHTML = `
+                <p><strong>Estado:</strong> <span style="color: ${statusColor}">${node.status.toUpperCase()}</span></p>
+                <p><strong>ID:</strong> ${node.id}</p>
+                ${serverInfo}
+                ${networksInfo}
+            `;
+            
+            // Botones de acción
+            const isRunning = node.status === 'running';
+            panelActions.innerHTML = `
+                <button class="control-btn start" onclick="startContainerFromSCADA('${node.id}')" ${isRunning ? 'disabled' : ''}>
+                    ▶️ Iniciar
+                </button>
+                <button class="control-btn stop" onclick="stopContainerFromSCADA('${node.id}')" ${!isRunning ? 'disabled' : ''}>
+                    ⏹️ Detener
+                </button>
+                <button class="control-btn restart" onclick="restartContainerFromSCADA('${node.id}')">
+                    🔄 Reiniciar
+                </button>
+            `;
+            
+            panel.classList.add('visible');
+        }
+
+        function closeControlPanel() {
+            const panel = document.getElementById('controlPanel');
+            panel.classList.remove('visible');
+            
+            // Quitar highlight
+            nodeElements.style('opacity', 1);
+            linkElements.style('opacity', 1);
+        }
+
+        async function startContainerFromSCADA(containerId) {
+            try {
+                const response = await fetch(`${API_URL}/containers/${containerId}/start`, { 
+                    method: 'POST' 
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ ' + data.message);
+                    closeControlPanel();
+                    await loadTopology();
+                } else {
+                    alert('❌ Error: ' + (data.detail || 'No se pudo iniciar el contenedor'));
+                }
+            } catch (error) {
+                console.error('Error starting container:', error);
+                alert('❌ Error al iniciar el contenedor');
+            }
+        }
+
+        async function stopContainerFromSCADA(containerId) {
+            if (!confirm('¿Estás seguro de detener este contenedor?')) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/containers/${containerId}/stop`, { 
+                    method: 'POST' 
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ ' + data.message);
+                    closeControlPanel();
+                    await loadTopology();
+                } else {
+                    alert('❌ Error: ' + (data.detail || 'No se pudo detener el contenedor'));
+                }
+            } catch (error) {
+                console.error('Error stopping container:', error);
+                alert('❌ Error al detener el contenedor');
+            }
+        }
+
+        async function restartContainerFromSCADA(containerId) {
+            if (!confirm('¿Estás seguro de reiniciar este contenedor?')) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/containers/${containerId}/restart`, { 
+                    method: 'POST' 
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ ' + data.message);
+                    closeControlPanel();
+                    await loadTopology();
+                } else {
+                    alert('❌ Error: ' + (data.detail || 'No se pudo reiniciar el contenedor'));
+                }
+            } catch (error) {
+                console.error('Error restarting container:', error);
+                alert('❌ Error al reiniciar el contenedor');
+            }
         }
 
         function isConnected(node1, node2) {
@@ -602,6 +840,7 @@
         d3.select('#topology-svg').on('click', () => {
             nodeElements.style('opacity', 1);
             linkElements.style('opacity', 1);
+            closeControlPanel();
         });
 
         function dragstarted(event, d) {

@@ -7,10 +7,18 @@ import os
 from datetime import datetime
 import time
 import asyncio
+import docker
 
 # Import agent manager and ssh deployer
 from agent_manager import agent_manager
 from ssh_deployer import deployer
+
+# Docker client for local container control
+try:
+    docker_client = docker.from_env()
+except Exception as e:
+    print(f"⚠️  Warning: Could not connect to Docker: {e}")
+    docker_client = None
 
 app = FastAPI(
     title="kuNNA API",
@@ -205,6 +213,7 @@ def get_services(category: Optional[str] = None, active: Optional[bool] = None):
             "color": "#9333ea",
             "isActive": container['status'] == 'running',
             "status": container['status'],
+            "container_id": f"remote-{container['server_id']}-{container['id']}",
             "app_group": f"{container['server_hostname']}-{container.get('app_group', 'unknown')}",
             "networks": container.get('networks', []),
             "is_remote": True,
@@ -412,6 +421,167 @@ async def report_traffic(event: TrafficEvent):
         await manager.broadcast(traffic_event)
     
     return {"status": "ok", "broadcasted_to": len(manager.active_connections)}
+
+# ============= CONTROL DE CONTENEDORES =============
+
+@app.post("/api/containers/{container_id}/start")
+async def start_container(container_id: str):
+    """Inicia un contenedor (local o remoto)"""
+    # Detectar si es remoto por el formato del ID
+    if container_id.startswith("remote-"):
+        # Formato: remote-{server_id}-{container_id}
+        parts = container_id.split("-", 2)
+        if len(parts) != 3:
+            raise HTTPException(status_code=400, detail="ID de contenedor remoto inválido")
+        
+        server_id = parts[1]
+        real_container_id = parts[2]
+        
+        # Enviar comando al agente remoto
+        server = agent_manager.servers.get(server_id)
+        if not server:
+            raise HTTPException(status_code=404, detail="Servidor remoto no encontrado")
+        
+        try:
+            await server.websocket.send_json({
+                "type": "container_control",
+                "action": "start",
+                "container_id": real_container_id
+            })
+            
+            # Esperar respuesta
+            response = await asyncio.wait_for(
+                server.websocket.receive_json(),
+                timeout=10.0
+            )
+            
+            if response.get("status") == "success":
+                return {"status": "success", "message": f"Contenedor {real_container_id} iniciado en {server.hostname}"}
+            else:
+                raise HTTPException(status_code=500, detail=response.get("error", "Error desconocido"))
+        
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=504, detail="Timeout esperando respuesta del agente")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    else:
+        # Contenedor local
+        if not docker_client:
+            raise HTTPException(status_code=503, detail="Docker no disponible")
+        
+        try:
+            container = docker_client.containers.get(container_id)
+            container.start()
+            return {"status": "success", "message": f"Contenedor {container.name} iniciado"}
+        except docker.errors.NotFound:
+            raise HTTPException(status_code=404, detail="Contenedor no encontrado")
+        except docker.errors.APIError as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/containers/{container_id}/stop")
+async def stop_container(container_id: str):
+    """Detiene un contenedor (local o remoto)"""
+    # Detectar si es remoto
+    if container_id.startswith("remote-"):
+        parts = container_id.split("-", 2)
+        if len(parts) != 3:
+            raise HTTPException(status_code=400, detail="ID de contenedor remoto inválido")
+        
+        server_id = parts[1]
+        real_container_id = parts[2]
+        
+        server = agent_manager.servers.get(server_id)
+        if not server:
+            raise HTTPException(status_code=404, detail="Servidor remoto no encontrado")
+        
+        try:
+            await server.websocket.send_json({
+                "type": "container_control",
+                "action": "stop",
+                "container_id": real_container_id
+            })
+            
+            response = await asyncio.wait_for(
+                server.websocket.receive_json(),
+                timeout=10.0
+            )
+            
+            if response.get("status") == "success":
+                return {"status": "success", "message": f"Contenedor {real_container_id} detenido en {server.hostname}"}
+            else:
+                raise HTTPException(status_code=500, detail=response.get("error", "Error desconocido"))
+        
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=504, detail="Timeout esperando respuesta del agente")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    else:
+        # Contenedor local
+        if not docker_client:
+            raise HTTPException(status_code=503, detail="Docker no disponible")
+        
+        try:
+            container = docker_client.containers.get(container_id)
+            container.stop(timeout=10)
+            return {"status": "success", "message": f"Contenedor {container.name} detenido"}
+        except docker.errors.NotFound:
+            raise HTTPException(status_code=404, detail="Contenedor no encontrado")
+        except docker.errors.APIError as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/containers/{container_id}/restart")
+async def restart_container(container_id: str):
+    """Reinicia un contenedor (local o remoto)"""
+    # Detectar si es remoto
+    if container_id.startswith("remote-"):
+        parts = container_id.split("-", 2)
+        if len(parts) != 3:
+            raise HTTPException(status_code=400, detail="ID de contenedor remoto inválido")
+        
+        server_id = parts[1]
+        real_container_id = parts[2]
+        
+        server = agent_manager.servers.get(server_id)
+        if not server:
+            raise HTTPException(status_code=404, detail="Servidor remoto no encontrado")
+        
+        try:
+            await server.websocket.send_json({
+                "type": "container_control",
+                "action": "restart",
+                "container_id": real_container_id
+            })
+            
+            response = await asyncio.wait_for(
+                server.websocket.receive_json(),
+                timeout=15.0
+            )
+            
+            if response.get("status") == "success":
+                return {"status": "success", "message": f"Contenedor {real_container_id} reiniciado en {server.hostname}"}
+            else:
+                raise HTTPException(status_code=500, detail=response.get("error", "Error desconocido"))
+        
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=504, detail="Timeout esperando respuesta del agente")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    else:
+        # Contenedor local
+        if not docker_client:
+            raise HTTPException(status_code=503, detail="Docker no disponible")
+        
+        try:
+            container = docker_client.containers.get(container_id)
+            container.restart(timeout=10)
+            return {"status": "success", "message": f"Contenedor {container.name} reiniciado"}
+        except docker.errors.NotFound:
+            raise HTTPException(status_code=404, detail="Contenedor no encontrado")
+        except docker.errors.APIError as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 @app.websocket("/ws/traffic")
 async def websocket_endpoint(websocket: WebSocket):
