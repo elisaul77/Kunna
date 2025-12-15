@@ -77,6 +77,16 @@ async def track_requests(request: Request, call_next):
 
 DATA_FILE = "/app/data/services.json"
 
+class TrafficEvent(BaseModel):
+    """Modelo para eventos de tráfico entre servicios"""
+    from_service: str
+    to_service: str
+    method: str = "HTTP"
+    path: Optional[str] = None
+    status: Optional[int] = None
+    duration: Optional[float] = None  # en milisegundos
+    timestamp: Optional[str] = None
+
 class Service(BaseModel):
     id: Optional[str] = None
     name: str
@@ -377,6 +387,31 @@ def patch_service(service_id: str, updates: dict):
     save_services(services)
     
     return services[index]
+
+@app.post("/api/traffic")
+async def report_traffic(event: TrafficEvent):
+    """Endpoint para que servicios externos reporten tráfico al SCADA"""
+    # Completar timestamp si no viene
+    if not event.timestamp:
+        event.timestamp = datetime.now().isoformat()
+    
+    # Crear evento en formato compatible con WebSocket
+    traffic_event = {
+        "type": "request",
+        "from": event.from_service,
+        "to": event.to_service,
+        "method": event.method,
+        "path": event.path or "/",
+        "status": event.status or 200,
+        "duration": event.duration or 0,
+        "timestamp": event.timestamp
+    }
+    
+    # Broadcast a clientes SCADA
+    if manager.active_connections:
+        await manager.broadcast(traffic_event)
+    
+    return {"status": "ok", "broadcasted_to": len(manager.active_connections)}
 
 @app.websocket("/ws/traffic")
 async def websocket_endpoint(websocket: WebSocket):
