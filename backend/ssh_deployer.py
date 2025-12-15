@@ -13,6 +13,7 @@ class SSHDeployer:
     
     def __init__(self):
         self.client: Optional[paramiko.SSHClient] = None
+        self.needs_sudo: bool = False
         
     def connect(self, host: str, port: int, username: str, 
                 password: Optional[str] = None, 
@@ -74,9 +75,31 @@ class SSHDeployer:
             return -1, "", str(e)
     
     def check_docker(self) -> bool:
-        """Verifica si Docker está instalado"""
-        exit_code, output, _ = self.execute_command("docker --version")
-        return exit_code == 0
+        """Verifica si Docker está instalado y si necesita sudo"""
+        # Probar sin sudo primero - usar un comando que requiera acceso al socket
+        exit_code, output, _ = self.execute_command("docker ps 2>&1")
+        print(f"🔍 Docker sin sudo: exit_code={exit_code}")
+        if exit_code == 0:
+            self.needs_sudo = False
+            print("✅ Docker funciona sin sudo")
+            return True
+        
+        # Probar con sudo
+        exit_code, output, _ = self.execute_command("sudo docker ps 2>&1")
+        print(f"🔍 Docker con sudo: exit_code={exit_code}")
+        if exit_code == 0:
+            self.needs_sudo = True
+            print("⚠️  Usuario requiere sudo para Docker")
+            return True
+        
+        # Verificar si al menos está instalado
+        exit_code, _, _ = self.execute_command("docker --version")
+        if exit_code == 0:
+            print("⚠️  Docker instalado pero no accesible")
+            return False
+        
+        print("❌ Docker no está instalado")
+        return False
     
     def install_docker(self, os_type: str = "ubuntu") -> bool:
         """Instala Docker en el servidor"""
@@ -130,7 +153,8 @@ class SSHDeployer:
         try:
             # Detener y eliminar contenedor existente
             print("🛑 Deteniendo agente existente (si existe)...")
-            self.execute_command("docker rm -f kunna-agent 2>/dev/null || true")
+            docker_cmd = "sudo docker" if self.needs_sudo else "docker"
+            self.execute_command(f"{docker_cmd} rm -f kunna-agent 2>/dev/null || true")
             
             # Obtener hostname si no se proporciona server_id
             if not server_id:
@@ -177,8 +201,10 @@ class SSHDeployer:
             
             # Construir imagen nativamente en el servidor remoto
             print("🔨 Construyendo imagen del agente (esto puede tardar en Raspberry Pi)...")
+            docker_cmd = "sudo docker" if self.needs_sudo else "docker"
+            print(f"🔧 Usando comando: {docker_cmd} (needs_sudo={self.needs_sudo})")
             exit_code, output, error = self.execute_command(
-                "cd ~/kunna-agent && docker build -t kunna/agent:latest ."
+                f"cd ~/kunna-agent && {docker_cmd} build -t kunna/agent:latest ."
             )
             
             if exit_code != 0:
@@ -190,7 +216,7 @@ class SSHDeployer:
             
             # Desplegar contenedor con variables de entorno
             print("🚀 Desplegando agente...")
-            docker_cmd = f"""docker run -d \
+            run_cmd = f"""{docker_cmd} run -d \
                 --name kunna-agent \
                 --restart unless-stopped \
                 -v /var/run/docker.sock:/var/run/docker.sock:ro \
@@ -200,7 +226,7 @@ class SSHDeployer:
                 -e KUNNA_HEARTBEAT_INTERVAL='10' \
                 kunna/agent:latest"""
             
-            exit_code, output, error = self.execute_command(docker_cmd)
+            exit_code, output, error = self.execute_command(run_cmd)
             
             if exit_code != 0:
                 print(f"❌ Error desplegando contenedor:")
@@ -211,20 +237,21 @@ class SSHDeployer:
             print("⏳ Verificando despliegue...")
             time.sleep(5)
             
-            exit_code, output, _ = self.execute_command("docker ps --filter name=kunna-agent --format '{{.Names}}'")
+            docker_ps_cmd = "sudo docker" if self.needs_sudo else "docker"
+            exit_code, output, _ = self.execute_command(f"{docker_ps_cmd} ps --filter name=kunna-agent --format '{{{{.Names}}}}'")
             
             if "kunna-agent" in output:
                 print("✅ Agente desplegado correctamente")
                 
                 # Mostrar logs iniciales
-                _, logs, _ = self.execute_command("docker logs kunna-agent --tail 10")
+                _, logs, _ = self.execute_command(f"{docker_ps_cmd} logs kunna-agent --tail 10")
                 print(f"📋 Logs del agente:\n{logs}")
                 
                 return True
             else:
                 print("❌ El agente no está corriendo")
                 # Mostrar logs para debug
-                _, logs, _ = self.execute_command("docker logs kunna-agent 2>&1")
+                _, logs, _ = self.execute_command(f"{docker_ps_cmd} logs kunna-agent 2>&1")
                 print(f"📋 Logs de error:\n{logs}")
                 return False
                 
