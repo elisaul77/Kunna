@@ -187,10 +187,14 @@ class KunnaAgent:
                     # Comando de control de contenedor
                     action = data.get('action')
                     container_id = data.get('container_id')
+                    request_id = data.get('request_id')
                     
                     self.log(f"🎮 Comando recibido: {action} en {container_id}")
                     
                     response = await self.handle_container_control(action, container_id)
+                    response['type'] = 'container_control_response'
+                    if request_id:
+                        response['request_id'] = request_id
                     await websocket.send(json.dumps(response))
                     
                 else:

@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 from typing import List, Optional
@@ -325,7 +326,8 @@ def get_topology():
             "app_group": f"remote-{container['server_hostname']}",
             "is_remote": True,
             "server_id": container['server_id'],
-            "server_hostname": container['server_hostname']
+            "server_hostname": container['server_hostname'],
+            "container_id": f"remote-{container['server_id']}-{container['id']}"
         })
     
     # Agrupar por app_group
@@ -350,7 +352,8 @@ def get_topology():
             "icon": service.get("icon", "🔗"),
             "networks": service.get("networks", []),
             "is_remote": service.get("is_remote", False),
-            "server_hostname": service.get("server_hostname")
+            "server_hostname": service.get("server_hostname"),
+            "container_id": service.get("container_id")
         })
     
     # Detectar conexiones entre servicios (por redes compartidas)
@@ -444,25 +447,28 @@ async def start_container(container_id: str):
             raise HTTPException(status_code=404, detail="Servidor remoto no encontrado")
         
         try:
-            await server.websocket.send_json({
-                "type": "container_control",
-                "action": "start",
-                "container_id": real_container_id
-            })
-            
-            # Esperar respuesta
-            response = await asyncio.wait_for(
-                server.websocket.receive_json(),
-                timeout=10.0
+            response = await agent_manager.container_control(
+                server_id=server_id,
+                action="start",
+                container_id=real_container_id,
+                timeout=2.0,
             )
-            
+
             if response.get("status") == "success":
-                return {"status": "success", "message": f"Contenedor {real_container_id} iniciado en {server.hostname}"}
-            else:
-                raise HTTPException(status_code=500, detail=response.get("error", "Error desconocido"))
-        
+                return {"status": "success", "message": response.get("message") or f"Contenedor {real_container_id} iniciado en {server.hostname}"}
+
+            raise HTTPException(status_code=500, detail=response.get("error", "Error desconocido"))
         except asyncio.TimeoutError:
-            raise HTTPException(status_code=504, detail="Timeout esperando respuesta del agente")
+            # Compatibilidad: agentes antiguos ejecutan el comando pero no responden con request_id
+            return JSONResponse(
+                status_code=202,
+                content={
+                    "status": "accepted",
+                    "message": f"Comando enviado al agente ({server.hostname}). Esperando actualización de estado...",
+                },
+            )
+        except ConnectionError as e:
+            raise HTTPException(status_code=503, detail=str(e))
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
     
@@ -472,9 +478,13 @@ async def start_container(container_id: str):
             raise HTTPException(status_code=503, detail="Docker no disponible")
         
         try:
-            container = docker_client.containers.get(container_id)
-            container.start()
-            return {"status": "success", "message": f"Contenedor {container.name} iniciado"}
+            def _start_local():
+                container = docker_client.containers.get(container_id)
+                container.start()
+                return container.name
+
+            name = await asyncio.to_thread(_start_local)
+            return {"status": "success", "message": f"Contenedor {name} iniciado"}
         except docker.errors.NotFound:
             raise HTTPException(status_code=404, detail="Contenedor no encontrado")
         except docker.errors.APIError as e:
@@ -497,24 +507,27 @@ async def stop_container(container_id: str):
             raise HTTPException(status_code=404, detail="Servidor remoto no encontrado")
         
         try:
-            await server.websocket.send_json({
-                "type": "container_control",
-                "action": "stop",
-                "container_id": real_container_id
-            })
-            
-            response = await asyncio.wait_for(
-                server.websocket.receive_json(),
-                timeout=10.0
+            response = await agent_manager.container_control(
+                server_id=server_id,
+                action="stop",
+                container_id=real_container_id,
+                timeout=2.0,
             )
-            
+
             if response.get("status") == "success":
-                return {"status": "success", "message": f"Contenedor {real_container_id} detenido en {server.hostname}"}
-            else:
-                raise HTTPException(status_code=500, detail=response.get("error", "Error desconocido"))
-        
+                return {"status": "success", "message": response.get("message") or f"Contenedor {real_container_id} detenido en {server.hostname}"}
+
+            raise HTTPException(status_code=500, detail=response.get("error", "Error desconocido"))
         except asyncio.TimeoutError:
-            raise HTTPException(status_code=504, detail="Timeout esperando respuesta del agente")
+            return JSONResponse(
+                status_code=202,
+                content={
+                    "status": "accepted",
+                    "message": f"Comando enviado al agente ({server.hostname}). Esperando actualización de estado...",
+                },
+            )
+        except ConnectionError as e:
+            raise HTTPException(status_code=503, detail=str(e))
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
     
@@ -524,9 +537,13 @@ async def stop_container(container_id: str):
             raise HTTPException(status_code=503, detail="Docker no disponible")
         
         try:
-            container = docker_client.containers.get(container_id)
-            container.stop(timeout=10)
-            return {"status": "success", "message": f"Contenedor {container.name} detenido"}
+            def _stop_local():
+                container = docker_client.containers.get(container_id)
+                container.stop(timeout=10)
+                return container.name
+
+            name = await asyncio.to_thread(_stop_local)
+            return {"status": "success", "message": f"Contenedor {name} detenido"}
         except docker.errors.NotFound:
             raise HTTPException(status_code=404, detail="Contenedor no encontrado")
         except docker.errors.APIError as e:
@@ -549,24 +566,27 @@ async def restart_container(container_id: str):
             raise HTTPException(status_code=404, detail="Servidor remoto no encontrado")
         
         try:
-            await server.websocket.send_json({
-                "type": "container_control",
-                "action": "restart",
-                "container_id": real_container_id
-            })
-            
-            response = await asyncio.wait_for(
-                server.websocket.receive_json(),
-                timeout=15.0
+            response = await agent_manager.container_control(
+                server_id=server_id,
+                action="restart",
+                container_id=real_container_id,
+                timeout=2.0,
             )
-            
+
             if response.get("status") == "success":
-                return {"status": "success", "message": f"Contenedor {real_container_id} reiniciado en {server.hostname}"}
-            else:
-                raise HTTPException(status_code=500, detail=response.get("error", "Error desconocido"))
-        
+                return {"status": "success", "message": response.get("message") or f"Contenedor {real_container_id} reiniciado en {server.hostname}"}
+
+            raise HTTPException(status_code=500, detail=response.get("error", "Error desconocido"))
         except asyncio.TimeoutError:
-            raise HTTPException(status_code=504, detail="Timeout esperando respuesta del agente")
+            return JSONResponse(
+                status_code=202,
+                content={
+                    "status": "accepted",
+                    "message": f"Comando enviado al agente ({server.hostname}). Esperando actualización de estado...",
+                },
+            )
+        except ConnectionError as e:
+            raise HTTPException(status_code=503, detail=str(e))
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
     
@@ -576,9 +596,13 @@ async def restart_container(container_id: str):
             raise HTTPException(status_code=503, detail="Docker no disponible")
         
         try:
-            container = docker_client.containers.get(container_id)
-            container.restart(timeout=10)
-            return {"status": "success", "message": f"Contenedor {container.name} reiniciado"}
+            def _restart_local():
+                container = docker_client.containers.get(container_id)
+                container.restart(timeout=10)
+                return container.name
+
+            name = await asyncio.to_thread(_restart_local)
+            return {"status": "success", "message": f"Contenedor {name} reiniciado"}
         except docker.errors.NotFound:
             raise HTTPException(status_code=404, detail="Contenedor no encontrado")
         except docker.errors.APIError as e:
@@ -634,6 +658,10 @@ async def agent_websocket(websocket: WebSocket):
                     server_id = server_info.get('id')
                     if server_id:
                         agent_manager.update_agent_data(server_id, data)
+
+            elif msg_type == 'container_control_response':
+                # Respuesta a un comando previo (start/stop/restart)
+                agent_manager.handle_agent_response(data)
                         
     except WebSocketDisconnect:
         if server_id:

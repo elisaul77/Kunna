@@ -446,8 +446,11 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:8000/api';
-        const WS_URL = 'ws://localhost:8000/ws/traffic';
+        const BACKEND_HOST = window.location.hostname;
+        const BACKEND_HTTP = `${window.location.protocol}//${BACKEND_HOST}:8000`;
+        const API_URL = `${BACKEND_HTTP}/api`;
+        const WS_SCHEME = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const WS_URL = `${WS_SCHEME}://${BACKEND_HOST}:8000/ws/traffic`;
         let topologyData = null;
         let simulation = null;
         let svg = null;
@@ -741,17 +744,18 @@
             
             // Botones de acción
             const isRunning = node.status === 'running';
-            panelActions.innerHTML = `
-                <button class="control-btn start" onclick="startContainerFromSCADA('${node.id}')" ${isRunning ? 'disabled' : ''}>
+            const containerId = node.container_id || (node.id && node.id.startsWith('remote-') ? node.id : null);
+            panelActions.innerHTML = containerId ? `
+                <button class="control-btn start" onclick="startContainerFromSCADA('${containerId}')" ${isRunning ? 'disabled' : ''}>
                     ▶️ Iniciar
                 </button>
-                <button class="control-btn stop" onclick="stopContainerFromSCADA('${node.id}')" ${!isRunning ? 'disabled' : ''}>
+                <button class="control-btn stop" onclick="stopContainerFromSCADA('${containerId}')" ${!isRunning ? 'disabled' : ''}>
                     ⏹️ Detener
                 </button>
-                <button class="control-btn restart" onclick="restartContainerFromSCADA('${node.id}')">
+                <button class="control-btn restart" onclick="restartContainerFromSCADA('${containerId}')">
                     🔄 Reiniciar
                 </button>
-            `;
+            ` : `<p style="opacity: 0.8; font-size: 12px; margin: 0;">Sin contenedor asociado (solo lectura)</p>`;
             
             panel.classList.add('visible');
         }

@@ -636,7 +636,9 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:8000/api';
+        const BACKEND_HOST = window.location.hostname;
+        const BACKEND_HTTP = `${window.location.protocol}//${BACKEND_HOST}:8000`;
+        const API_URL = `${BACKEND_HTTP}/api`;
         let currentFilter = 'all';
         let allServices = [];
 
@@ -677,15 +679,15 @@
                 const statusText = status.charAt(0).toUpperCase() + status.slice(1);
                 const statusBadge = `<span class="service-status ${statusClass}">${statusText}</span>`;
                 
-                // Botones de control (para todos los servicios con container_id)
-                const containerId = service.container_id || service.id;
-                const controlButtons = `
+                // Botones de control (solo si hay un contenedor real asociado)
+                const containerId = service.container_id || (service.id && service.id.startsWith('remote-') ? service.id : null);
+                const controlButtons = containerId ? `
                     <div class="service-actions" onclick="event.stopPropagation()" style="margin-top: 12px; border-top: none;">
                         <button class="btn-action btn-start" onclick="startContainer('${containerId}')" ${status === 'running' ? 'disabled' : ''}>▶️ Iniciar</button>
                         <button class="btn-action btn-stop" onclick="stopContainer('${containerId}')" ${status !== 'running' ? 'disabled' : ''}>⏹️ Detener</button>
                         <button class="btn-action btn-restart" onclick="restartContainer('${containerId}')">🔄 Reiniciar</button>
                     </div>
-                `;
+                ` : '';
                 
                 // Botones de edición (solo para servicios locales)
                 const editActions = isRemote ? '' : `
@@ -855,7 +857,7 @@
             }
         }
 
-        document.getElementById('serviceForm').addEventListener('submit', async (e) {
+        document.getElementById('serviceForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const serviceId = document.getElementById('serviceId').value;

@@ -484,7 +484,9 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:8000/api';
+        const BACKEND_HOST = window.location.hostname;
+        const BACKEND_HTTP = `${window.location.protocol}//${BACKEND_HOST}:8000`;
+        const API_URL = `${BACKEND_HTTP}/api`;
 
         // Cargar servidores al inicio
         loadServers();

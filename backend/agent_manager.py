@@ -8,6 +8,7 @@ from datetime import datetime
 import asyncio
 from fastapi import WebSocket
 import json
+import uuid
 
 class RemoteServer:
     """Representa un servidor remoto registrado"""
@@ -44,6 +45,10 @@ class AgentManager:
     def __init__(self):
         self.servers: Dict[str, RemoteServer] = {}
         self.active_connections: Dict[str, WebSocket] = {}
+        # request_id -> Future que será resuelto cuando el agente responda
+        self._pending_requests: Dict[str, asyncio.Future] = {}
+        # request_id -> server_id (para cancelar en disconnect)
+        self._pending_request_server: Dict[str, str] = {}
         
     async def register_agent(self, server_info: dict, websocket: WebSocket) -> RemoteServer:
         """Registra un nuevo agente"""
@@ -72,6 +77,15 @@ class AgentManager:
     
     def disconnect_agent(self, server_id: str):
         """Desconecta un agente"""
+        # Cancelar requests pendientes asociados a este servidor
+        for request_id, req_server_id in list(self._pending_request_server.items()):
+            if req_server_id != server_id:
+                continue
+            fut = self._pending_requests.pop(request_id, None)
+            self._pending_request_server.pop(request_id, None)
+            if fut and not fut.done():
+                fut.set_exception(ConnectionError("Agente desconectado"))
+
         if server_id in self.servers:
             self.servers[server_id].connected = False
             self.servers[server_id].websocket = None
@@ -154,6 +168,55 @@ class AgentManager:
         # Limpiar desconectados
         for server_id in disconnected:
             self.disconnect_agent(server_id)
+
+    def handle_agent_response(self, data: dict) -> bool:
+        """Resuelve una request pendiente si el mensaje trae request_id."""
+        request_id = data.get('request_id')
+        if not request_id:
+            return False
+
+        fut = self._pending_requests.pop(request_id, None)
+        self._pending_request_server.pop(request_id, None)
+        if not fut:
+            return False
+        if not fut.done():
+            fut.set_result(data)
+        return True
+
+    async def send_request(self, server_id: str, payload: dict, timeout: float = 15.0) -> dict:
+        """Envía un payload a un agente y espera respuesta correlacionada por request_id."""
+        server = self.servers.get(server_id)
+        if not server or not server.connected or not server.websocket:
+            raise ConnectionError("Servidor remoto no conectado")
+
+        request_id = uuid.uuid4().hex
+        message = dict(payload)
+        message['request_id'] = request_id
+
+        loop = asyncio.get_running_loop()
+        fut = loop.create_future()
+        self._pending_requests[request_id] = fut
+        self._pending_request_server[request_id] = server_id
+
+        try:
+            await server.websocket.send_json(message)
+            return await asyncio.wait_for(fut, timeout=timeout)
+        finally:
+            # Limpieza defensiva en caso de timeout/errores
+            self._pending_requests.pop(request_id, None)
+            self._pending_request_server.pop(request_id, None)
+
+    async def container_control(self, server_id: str, action: str, container_id: str, timeout: float = 15.0) -> dict:
+        """Convenience: start/stop/restart remoto con correlación."""
+        return await self.send_request(
+            server_id,
+            {
+                'type': 'container_control',
+                'action': action,
+                'container_id': container_id,
+            },
+            timeout=timeout,
+        )
 
 # Instancia global
 agent_manager = AgentManager()
