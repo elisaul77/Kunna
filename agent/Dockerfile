@@ -11,6 +11,7 @@ RUN apt-get update && \
     gcc \
     python3-dev \
     linux-libc-dev \
+    iproute2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar requirements

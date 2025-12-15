@@ -145,10 +145,16 @@ class SSHDeployer:
             print(f"❌ Error transfiriendo archivo: {e}")
             return False
 
-    def deploy_agent(self, central_url: str, token: str, server_id: Optional[str] = None) -> bool:
+    def deploy_agent(self, central_url: str, token: str, server_id: Optional[str] = None, docker_network: Optional[str] = None) -> bool:
         """
         Despliega el agente kuNNA construyendo nativamente en el servidor remoto.
         Compatible con ARM64 (Raspberry Pi) y AMD64.
+        
+        Args:
+            central_url: URL del servidor central
+            token: Token de autenticación
+            server_id: ID del servidor (opcional, usa hostname por defecto)
+            docker_network: Red Docker adicional a la que conectar el agente (ej: para WireGuard)
         """
         try:
             # Detener y eliminar contenedor existente
@@ -216,9 +222,16 @@ class SSHDeployer:
             
             # Desplegar contenedor con variables de entorno
             print("🚀 Desplegando agente...")
+            
+            # Construir comando base
+            network_flag = f"--network {docker_network}" if docker_network else ""
+            cap_flag = "--cap-add=NET_ADMIN" if docker_network else ""
+            
             run_cmd = f"""{docker_cmd} run -d \
                 --name kunna-agent \
                 --restart unless-stopped \
+                {network_flag} \
+                {cap_flag} \
                 -v /var/run/docker.sock:/var/run/docker.sock:ro \
                 -e KUNNA_CENTRAL_URL='{central_url}' \
                 -e KUNNA_AGENT_TOKEN='{token}' \
@@ -226,12 +239,30 @@ class SSHDeployer:
                 -e KUNNA_HEARTBEAT_INTERVAL='10' \
                 kunna/agent:latest"""
             
+            if docker_network:
+                print(f"🔗 Conectando a red: {docker_network}")
+            
             exit_code, output, error = self.execute_command(run_cmd)
             
             if exit_code != 0:
                 print(f"❌ Error desplegando contenedor:")
                 print(error)
                 return False
+            
+            # Si está en red WireGuard, agregar ruta al rango VPN
+            if docker_network == "my_docker_network" or docker_network == "containers":
+                print("🛣️  Configurando ruta a red WireGuard (10.x.x.0/24)...")
+                wg_gateway_cmd = f"{docker_cmd} inspect wg-easy --format '{{{{range .NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}}'"
+                exit_code, wg_ip, _ = self.execute_command(wg_gateway_cmd)
+                
+                if exit_code == 0 and wg_ip.strip():
+                    wg_ip = wg_ip.strip()
+                    print(f"   Gateway WireGuard: {wg_ip}")
+                    
+                    # Agregar ruta en el contenedor del agente
+                    route_cmd = f"{docker_cmd} exec kunna-agent ip route add 10.x.x.0/24 via {wg_ip} || true"
+                    self.execute_command(route_cmd)
+                    print("✅ Ruta WireGuard configurada")
             
             # Verificar que esté corriendo
             print("⏳ Verificando despliegue...")
@@ -263,7 +294,8 @@ class SSHDeployer:
     
     def full_deployment(self, host: str, port: int, username: str,
                        password: Optional[str], private_key: Optional[str],
-                       central_url: str, 
+                       central_url: str,
+                       docker_network: Optional[str] = None,
                        progress_callback: Optional[Callable] = None) -> dict:
         """
         Realiza el deployment completo del agente
@@ -313,7 +345,7 @@ class SSHDeployer:
             
             # 4. Desplegar agente (con construcción nativa para ARM/AMD64)
             log_progress("🚀 Desplegando kuNNA Agent...")
-            if not self.deploy_agent(central_url, token, server_id=host):
+            if not self.deploy_agent(central_url, token, server_id=host, docker_network=docker_network):
                 result["message"] = "No se pudo desplegar el agente"
                 log_progress("❌ Deployment fallido", "error")
                 return result

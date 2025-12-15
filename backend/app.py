@@ -151,6 +151,19 @@ def get_service(service_id: str):
 def create_service(service: Service):
     services = load_services()
     
+    # Verificar si ya existe un servicio con el mismo nombre (evitar duplicados del docker-monitor)
+    existing = next((s for s in services if s.get("name") == service.name), None)
+    if existing:
+        # Si ya existe, actualizarlo en lugar de crear uno nuevo
+        service.id = existing["id"]
+        service.createdAt = existing.get("createdAt", datetime.now().isoformat())
+        
+        index = next((i for i, s in enumerate(services) if s["id"] == existing["id"]), None)
+        services[index] = service.dict()
+        save_services(services)
+        return service
+    
+    # Si no existe, crear nuevo con ID incremental
     new_id = str(max([int(s["id"]) for s in services if s["id"].isdigit()] + [0]) + 1)
     service.id = new_id
     service.createdAt = datetime.now().isoformat()
@@ -368,6 +381,7 @@ class DeploymentRequest(BaseModel):
     password: Optional[str] = None
     private_key: Optional[str] = None
     central_url: Optional[str] = "ws://localhost:8000"
+    docker_network: Optional[str] = None  # Red Docker para WireGuard/VPN
 
 @app.post("/api/remote/deploy")
 async def deploy_agent_endpoint(request: DeploymentRequest):
@@ -386,7 +400,8 @@ async def deploy_agent_endpoint(request: DeploymentRequest):
         username=request.username,
         password=request.password,
         private_key=request.private_key,
-        central_url=request.central_url
+        central_url=request.central_url,
+        docker_network=request.docker_network
     )
     
     if not result["success"]:
