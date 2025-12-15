@@ -224,6 +224,7 @@ def sync_containers():
             'color': color,
             'isActive': True,
             'status': container['status'],
+            'container_id': container['id'],
             'app_group': container['app_group'],
             'networks': container['networks'],
         }

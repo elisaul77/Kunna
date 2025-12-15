@@ -105,6 +105,7 @@ class Service(BaseModel):
     color: Optional[str] = "#3b82f6"
     isActive: bool = True
     status: Optional[str] = "running"
+    container_id: Optional[str] = None
     app_group: Optional[str] = "uncategorized"
     networks: Optional[List[str]] = []
     createdAt: Optional[str] = None

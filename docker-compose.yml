@@ -10,6 +10,7 @@ services:
       - ./data:/app/data
       - ./backend/app.py:/app/app.py
       - ./agent:/app/agent:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
