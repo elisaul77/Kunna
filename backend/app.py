@@ -136,37 +136,59 @@ def get_services(category: Optional[str] = None, active: Optional[bool] = None):
     # Agregar servicios remotos de los agentes
     remote_containers = agent_manager.get_all_containers()
     for container in remote_containers:
-        # Extraer puertos expuestos (formato: "HostPort:ContainerPort")
+        # Extraer puertos expuestos (formato: "HostPort:ContainerPort" o "internal:Port")
         ports = container.get('ports', [])
         
-        # Priorizar puertos HTTP comunes (80, 443, 8080, 8443, 3000, 5000, etc.)
+        # Priorizar puertos HTTP comunes (80, 443, 8080, 8443, 3000, 5000, 5678)
         http_ports = ['80', '443', '8080', '8443', '3000', '5000', '5678']
         selected_port = None
+        is_internal = False
         
         if ports:
-            # Buscar puerto HTTP común
+            # Buscar puerto HTTP común (primero externos, luego internos)
             for port_mapping in ports:
-                host_port = port_mapping.split(':')[0]
-                if host_port in http_ports:
-                    selected_port = host_port
-                    break
+                if port_mapping.startswith('internal:'):
+                    # Puerto interno
+                    internal_port = port_mapping.split(':')[1]
+                    if internal_port in http_ports and not selected_port:
+                        selected_port = internal_port
+                        is_internal = True
+                else:
+                    # Puerto expuesto al host
+                    host_port = port_mapping.split(':')[0]
+                    if host_port in http_ports:
+                        selected_port = host_port
+                        is_internal = False
+                        break
             
-            # Si no hay puerto HTTP común, usar el primero
+            # Si no hay puerto HTTP común, usar el primero disponible
             if not selected_port:
-                selected_port = ports[0].split(':')[0]
+                first_port = ports[0]
+                if first_port.startswith('internal:'):
+                    selected_port = first_port.split(':')[1]
+                    is_internal = True
+                else:
+                    selected_port = first_port.split(':')[0]
+                    is_internal = False
         
         # Construir URL usando la IP real del servidor (server_id) y el puerto expuesto
-        if selected_port:
+        if selected_port and not is_internal:
             url = f"http://{container['server_id']}:{selected_port}"
+            description = f"Remote: {container['image']} on {container['server_hostname']}"
+        elif selected_port and is_internal:
+            # Puerto interno - probablemente detrás de proxy
+            url = "#"
+            description = f"🔒 Internal: {container['image']} on {container['server_hostname']} (port {selected_port} via proxy)"
         else:
             # Sin puerto expuesto - servicio interno
-            url = f"http://{container['server_id']}"
+            url = "#"
+            description = f"🔒 Internal: {container['image']} on {container['server_hostname']} (no exposed ports)"
         
         # Convertir contenedor remoto a formato de servicio
         remote_service = {
             "id": f"remote-{container['server_id']}-{container['id']}",
             "name": container['name'],
-            "description": f"Remote: {container['image']} on {container['server_hostname']}",
+            "description": description,
             "url": url,
             "icon": "🌐",
             "category": "Remote Services",

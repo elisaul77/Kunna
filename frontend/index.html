@@ -616,6 +616,9 @@
 
             grid.innerHTML = services.map(service => {
                 const isRemote = service.is_remote || false;
+                const isInternal = service.url === '#';
+                const clickHandler = isInternal ? '' : `onclick="window.open('${service.url}', '_blank')"`;
+                const cursorStyle = isInternal ? 'cursor: not-allowed; opacity: 0.7;' : '';
                 const serverBadge = isRemote ? `<span class="remote-badge">🌐 ${service.server_hostname}</span>` : '';
                 const actions = isRemote ? '' : `
                     <div class="service-actions" onclick="event.stopPropagation()">
@@ -625,13 +628,13 @@
                 `;
                 
                 return `
-                    <div class="service-card" style="--card-color: ${service.color}" onclick="window.open('${service.url}', '_blank')">
+                    <div class="service-card" style="--card-color: ${service.color}; ${cursorStyle}" ${clickHandler}>
                         <span class="service-icon">${service.icon || '🔗'}</span>
                         <h3 class="service-name">${service.name}</h3>
                         ${serverBadge}
                         <span class="service-category">${service.category}</span>
                         <p class="service-description">${service.description}</p>
-                        <div class="service-url">${service.url}</div>
+                        <div class="service-url">${isInternal ? 'No exposed ports' : service.url}</div>
                         ${actions}
                     </div>
                 `;

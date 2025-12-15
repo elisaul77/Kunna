@@ -89,8 +89,14 @@ class KunnaAgent:
                 port_bindings = container.attrs['NetworkSettings'].get('Ports', {})
                 for container_port, host_bindings in port_bindings.items():
                     if host_bindings:
+                        # Puerto expuesto al host
                         for binding in host_bindings:
                             ports.append(f"{binding['HostPort']}:{container_port}")
+                    else:
+                        # Puerto interno sin binding al host (ej: servicios detrás de proxy)
+                        # Extraer solo el número de puerto (ej: "5678/tcp" -> "5678")
+                        internal_port = container_port.split('/')[0]
+                        ports.append(f"internal:{internal_port}")
                 info['ports'] = ports
                 
                 # Networks
