@@ -4,7 +4,7 @@
     "name": "mlflow-server",
     "description": "Contenedor Docker: ghcr.io/mlflow/mlflow:latest",
     "url": "http://localhost:5000",
-    "icon": "\ud83e\udd16",
+    "icon": "🤖",
     "category": "ML & AI",
     "color": "#0194e2",
     "isActive": true,
@@ -13,14 +13,17 @@
     "networks": [
       "mlflow_default"
     ],
-    "createdAt": "2025-12-15T01:36:39.618526"
+    "createdAt": "2025-12-15T01:36:39.618526",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
   },
   {
     "id": "2",
     "name": "kunna-frontend",
     "description": "Contenedor Docker: kunna_frontend:latest",
     "url": "http://localhost:3000",
-    "icon": "\ud83c\udfa8",
+    "icon": "🎨",
     "category": "Docker Services",
     "color": "#2496ed",
     "isActive": true,
@@ -29,14 +32,17 @@
     "networks": [
       "kunna_kunna-network"
     ],
-    "createdAt": "2025-12-15T01:53:20.700641"
+    "createdAt": "2025-12-15T01:53:20.700641",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
   },
   {
     "id": "3",
     "name": "kunna-docker-monitor",
     "description": "Contenedor Docker: kunna_docker-monitor:latest",
     "url": "#",
-    "icon": "\ud83d\udc33",
+    "icon": "🐳",
     "category": "Docker Services",
     "color": "#2496ed",
     "isActive": true,
@@ -45,14 +51,17 @@
     "networks": [
       "kunna_kunna-network"
     ],
-    "createdAt": "2025-12-15T01:53:20.705724"
+    "createdAt": "2025-12-15T01:53:20.705724",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
   },
   {
     "id": "4",
     "name": "kunna-backend",
     "description": "Contenedor Docker: kunna_backend:latest",
     "url": "http://localhost:8000",
-    "icon": "\u2699\ufe0f",
+    "icon": "⚙️",
     "category": "Docker Services",
     "color": "#2496ed",
     "isActive": true,
@@ -61,14 +70,17 @@
     "networks": [
       "kunna_kunna-network"
     ],
-    "createdAt": "2025-12-15T01:53:20.718872"
+    "createdAt": "2025-12-15T01:53:20.718872",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
   },
   {
     "id": "5",
     "name": "jupyter_cadquery",
     "description": "Contenedor Docker: jupyter_cadquery:custom",
     "url": "http://localhost:8888",
-    "icon": "\ud83d\udcca",
+    "icon": "📊",
     "category": "Data Science",
     "color": "#F37626",
     "isActive": true,
@@ -77,6 +89,9 @@
     "networks": [
       "jupyter_default"
     ],
-    "createdAt": "2025-12-15T01:53:20.722405"
+    "createdAt": "2025-12-15T01:53:20.722405",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
   }
 ]
