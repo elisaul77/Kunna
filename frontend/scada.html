@@ -197,6 +197,14 @@
             pointer-events: none;
         }
 
+        .node-remote-badge {
+            fill: var(--text-primary);
+            font-size: 10px;
+            font-weight: 500;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
         .node-icon {
             font-size: 24px;
             text-anchor: middle;
@@ -401,7 +409,9 @@
                         icon: service.icon,
                         group: group.id,
                         groupIndex: groupIndex,
-                        networks: service.networks
+                        networks: service.networks,
+                        is_remote: service.is_remote || false,
+                        server_hostname: service.server_hostname
                     });
                 });
             });
@@ -479,6 +489,14 @@
                 .attr('class', 'node-label')
                 .attr('dy', 70)
                 .text(d => d.name.length > 15 ? d.name.substring(0, 15) + '...' : d.name);
+
+            // Badge remoto (si aplica)
+            nodeElements.filter(d => d.is_remote)
+                .append('text')
+                .attr('class', 'node-remote-badge')
+                .attr('dy', 85)
+                .style('fill', '#a855f7')
+                .text(d => `🌐 ${d.server_hostname || ''}`);
 
             // Badge de estado
             nodeElements.append('circle')

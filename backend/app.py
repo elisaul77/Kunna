@@ -283,14 +283,36 @@ def get_categories():
 
 @app.get("/api/topology")
 def get_topology():
-    """Obtiene la topología de servicios para visualización SCADA"""
-    services = load_services()
+    """Obtiene la topología de servicios para visualización SCADA (incluye locales + remotos)"""
+    # Servicios locales
+    local_services = load_services()
+    
+    # Servicios remotos
+    remote_containers = agent_manager.get_all_containers()
+    
+    # Combinar todos los servicios
+    all_services = local_services.copy()
+    
+    # Convertir contenedores remotos a formato servicio
+    for container in remote_containers:
+        all_services.append({
+            "id": f"remote-{container['server_id']}-{container['id']}",
+            "name": container["name"],
+            "status": container.get("status", "unknown"),
+            "isActive": container.get("status") == "running",
+            "icon": "🌐",
+            "networks": container.get("networks", []),
+            "app_group": f"remote-{container['server_hostname']}",
+            "is_remote": True,
+            "server_id": container['server_id'],
+            "server_hostname": container['server_hostname']
+        })
     
     # Agrupar por app_group
     groups = {}
     connections = []
     
-    for service in services:
+    for service in all_services:
         app_group = service.get("app_group", "uncategorized")
         
         if app_group not in groups:
@@ -306,12 +328,14 @@ def get_topology():
             "status": service.get("status", "unknown"),
             "isActive": service.get("isActive", True),
             "icon": service.get("icon", "🔗"),
-            "networks": service.get("networks", [])
+            "networks": service.get("networks", []),
+            "is_remote": service.get("is_remote", False),
+            "server_hostname": service.get("server_hostname")
         })
     
     # Detectar conexiones entre servicios (por redes compartidas)
     network_map = {}
-    for service in services:
+    for service in all_services:
         for network in service.get("networks", []):
             if network not in network_map:
                 network_map[network] = []
@@ -331,8 +355,8 @@ def get_topology():
     return {
         "groups": list(groups.values()),
         "connections": connections,
-        "total_services": len(services),
-        "active_services": len([s for s in services if s.get("isActive", True)])
+        "total_services": len(all_services),
+        "active_services": len([s for s in all_services if s.get("isActive", True)])
     }
 
 @app.patch("/api/services/{service_id}")
