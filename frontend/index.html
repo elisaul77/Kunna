@@ -231,6 +231,19 @@
             letter-spacing: -0.5px;
         }
 
+        .remote-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 6px;
+            font-size: 0.75em;
+            margin-bottom: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
         .service-category {
             display: inline-block;
             padding: 6px 16px;
@@ -601,19 +614,30 @@
                 return;
             }
 
-            grid.innerHTML = services.map(service => `
-                <div class="service-card" style="--card-color: ${service.color}" onclick="window.open('${service.url}', '_blank')">
-                    <span class="service-icon">${service.icon || '🔗'}</span>
-                    <h3 class="service-name">${service.name}</h3>
-                    <span class="service-category">${service.category}</span>
-                    <p class="service-description">${service.description}</p>
-                    <div class="service-url">${service.url}</div>
+            grid.innerHTML = services.map(service => {
+                const isRemote = service.is_remote || false;
+                const clickHandler = isRemote ? '' : `onclick="window.open('${service.url}', '_blank')"`;
+                const cursorStyle = isRemote ? 'cursor: default;' : '';
+                const serverBadge = isRemote ? `<span class="remote-badge">🌐 ${service.server_hostname}</span>` : '';
+                const actions = isRemote ? '' : `
                     <div class="service-actions" onclick="event.stopPropagation()">
                         <button class="btn-action btn-edit" onclick="editService('${service.id}')">✏️ Editar</button>
                         <button class="btn-action btn-delete" onclick="deleteService('${service.id}')">🗑️ Eliminar</button>
                     </div>
-                </div>
-            `).join('');
+                `;
+                
+                return `
+                    <div class="service-card" style="--card-color: ${service.color}; ${cursorStyle}" ${clickHandler}>
+                        <span class="service-icon">${service.icon || '🔗'}</span>
+                        <h3 class="service-name">${service.name}</h3>
+                        ${serverBadge}
+                        <span class="service-category">${service.category}</span>
+                        <p class="service-description">${service.description}</p>
+                        <div class="service-url">${isRemote ? service.server_id : service.url}</div>
+                        ${actions}
+                    </div>
+                `;
+            }).join('');
         }
 
         function updateFilterButtons() {
