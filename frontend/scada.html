@@ -539,7 +539,8 @@
                         groupIndex: groupIndex,
                         networks: service.networks,
                         is_remote: service.is_remote || false,
-                        server_hostname: service.server_hostname
+                        server_hostname: service.server_hostname,
+                        container_id: service.container_id  // ← Agregar container_id para habilitar control
                     });
                 });
             });

@@ -9,7 +9,7 @@
     "color": "#0194e2",
     "isActive": true,
     "status": "running",
-    "container_id": null,
+    "container_id": "4100aceaf679",
     "app_group": "mlflow",
     "networks": [
       "mlflow_default"
@@ -29,7 +29,7 @@
     "color": "#2496ed",
     "isActive": true,
     "status": "running",
-    "container_id": null,
+    "container_id": "9f18ff47d0d9",
     "app_group": "kunna",
     "networks": [
       "kunna_kunna-network"
@@ -49,7 +49,7 @@
     "color": "#2496ed",
     "isActive": true,
     "status": "running",
-    "container_id": null,
+    "container_id": "7c2b1f2c5650",
     "app_group": "kunna",
     "networks": [
       "kunna_kunna-network"
@@ -69,7 +69,7 @@
     "color": "#2496ed",
     "isActive": true,
     "status": "running",
-    "container_id": null,
+    "container_id": "550a7a29050b",
     "app_group": "kunna",
     "networks": [
       "kunna_kunna-network"
@@ -87,9 +87,9 @@
     "icon": "📊",
     "category": "Data Science",
     "color": "#F37626",
-    "isActive": false,
-    "status": "exited",
-    "container_id": null,
+    "isActive": true,
+    "status": "running",
+    "container_id": "2b1ec6d39d7c",
     "app_group": "jupyter",
     "networks": [
       "jupyter_default"

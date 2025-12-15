@@ -167,9 +167,9 @@ def get_running_containers():
                 'health': container.attrs['State'].get('Health', {}).get('Status', 'none'),
             }
             
-            # Solo agregar si tiene puerto o está en un grupo de app conocido
-            if port or app_group != 'uncategorized':
-                container_info.append(info)
+            # Agregar siempre: aunque no tenga puerto/labels, necesitamos trackear
+            # el estado (running/exited) para habilitar start/stop desde el dashboard.
+            container_info.append(info)
         
         return container_info
     except Exception as e:
@@ -198,10 +198,32 @@ def sync_containers():
         
         # Verificar si ya está registrado
         if name in existing_services:
-            # Actualizar estado si cambió
             existing = existing_services[name]
+
+            updates = {}
+
+            # Mantener status/isActive sincronizados
             if existing.get('status') != container['status']:
-                update_service_status(existing['id'], container['status'])
+                updates['status'] = container['status']
+                updates['isActive'] = container['status'] == 'running'
+
+            # Asegurar container_id (clave para habilitar start/stop en UI)
+            if not existing.get('container_id') and container.get('id'):
+                updates['container_id'] = container['id']
+
+            # Completar metadatos si faltan
+            if (not existing.get('app_group')) and container.get('app_group'):
+                updates['app_group'] = container['app_group']
+            if (not existing.get('networks')) and container.get('networks'):
+                updates['networks'] = container['networks']
+
+            # Completar URL si es desconocida y hay puerto
+            if (not existing.get('url') or existing.get('url') == '#') and container.get('port'):
+                updates['url'] = f"http://localhost:{container['port']}"
+
+            if updates:
+                patch_service(existing['id'], updates)
+
             if DEBUG:
                 log(f"⏭️ {name} ya está registrado (estado: {container['status']})", "DEBUG")
             continue
@@ -245,6 +267,24 @@ def update_service_status(service_id, status):
             log(f"🔄 Actualizado estado de servicio {service_id}: {status}")
     except Exception as e:
         log(f"Error actualizando estado: {e}", "ERROR")
+
+def patch_service(service_id, updates):
+    """Actualiza parcialmente un servicio en kuNNA (PATCH)"""
+    try:
+        response = requests.patch(
+            f"{KUNNA_API}/{service_id}",
+            json=updates,
+            timeout=5,
+        )
+        if response.status_code == 200:
+            if DEBUG:
+                log(f"🧩 Patch service {service_id}: {', '.join(updates.keys())}", "DEBUG")
+            return True
+        log(f"⚠️ No se pudo actualizar servicio {service_id}: {response.text}", "WARNING")
+        return False
+    except Exception as e:
+        log(f"Error actualizando servicio {service_id}: {e}", "ERROR")
+        return False
 
 def monitor_loop():
     """Loop principal de monitoreo"""

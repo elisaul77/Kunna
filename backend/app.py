@@ -392,9 +392,25 @@ def patch_service(service_id: str, updates: dict):
     if index is None:
         raise HTTPException(status_code=404, detail="Servicio no encontrado")
     
-    # Actualizar solo los campos proporcionados
+    allowed_fields = {
+        "description",
+        "url",
+        "icon",
+        "category",
+        "color",
+        "isActive",
+        "status",
+        "container_id",
+        "app_group",
+        "networks",
+        "is_remote",
+        "server_id",
+        "server_hostname",
+    }
+
+    # Actualizar solo los campos permitidos (y permitir agregar nuevos campos conocidos)
     for key, value in updates.items():
-        if key in services[index]:
+        if key in allowed_fields:
             services[index][key] = value
     
     save_services(services)
