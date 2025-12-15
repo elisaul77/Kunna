@@ -935,36 +935,187 @@
         function handleTrafficEvent(event) {
             console.log('🚦 Tráfico en tiempo real:', event.method, event.path, '→', event.status);
             
-            // Encontrar el enlace correspondiente
-            const link = findLinkByServiceNames(event.from, event.to);
+            // Buscar o crear nodos
+            let fromNode = nodes.find(n => n.name === event.from || n.name.includes(event.from) || event.from.includes(n.name));
+            let toNode = nodes.find(n => n.name === event.to || n.name.includes(event.to) || event.to.includes(n.name));
+            
+            // Crear nodos temporales si no existen
+            if (!fromNode) {
+                fromNode = createTemporaryNode(event.from);
+            }
+            if (!toNode) {
+                toNode = createTemporaryNode(event.to);
+            }
+            
+            // Buscar o crear enlace
+            let link = links.find(l => 
+                (l.source.id === fromNode.id && l.target.id === toNode.id) ||
+                (l.target.id === fromNode.id && l.source.id === toNode.id)
+            );
+            
+            if (!link) {
+                link = createTemporaryLink(fromNode, toNode);
+            }
             
             if (link) {
                 animateRealTraffic(link, event);
             }
         }
 
-        function findLinkByServiceNames(from, to) {
-            // Si "from" es "external", buscar cualquier link que apunte al servicio "to"
-            if (from === 'external') {
-                const toNode = nodes.find(n => n.name === to || to.includes(n.name));
-                
-                if (toNode && links.length > 0) {
-                    return links.find(l => 
-                        l.source.id === toNode.id || l.target.id === toNode.id
-                    );
-                }
+        function createTemporaryNode(serviceName) {
+            if (!simulation) {
+                console.warn('⚠️  Simulación no inicializada, no se puede crear nodo temporal');
+                return null;
             }
             
-            // Convertir nombres de servicios a IDs
-            const fromNode = nodes.find(n => n.name === from || from.includes(n.name));
-            const toNode = nodes.find(n => n.name === to || to.includes(n.name));
+            const svg = d3.select('#topology-svg');
+            const width = svg.node().getBoundingClientRect().width;
+            const height = svg.node().getBoundingClientRect().height;
             
-            if (!fromNode || !toNode) return null;
+            const tempNode = {
+                id: `temp-${serviceName}-${Date.now()}`,
+                name: serviceName,
+                status: 'unknown',
+                icon: '🌐',
+                group: 'external',
+                groupIndex: 999,
+                networks: [],
+                is_remote: false,
+                is_temporary: true,
+                x: width / 2 + (Math.random() - 0.5) * 200,
+                y: height / 2 + (Math.random() - 0.5) * 200,
+                fx: width / 2 + (Math.random() - 0.5) * 200,  // Fijar posición
+                fy: height / 2 + (Math.random() - 0.5) * 200,
+                vx: 0,
+                vy: 0
+            };
             
-            return links.find(l => 
-                (l.source.id === fromNode.id && l.target.id === toNode.id) ||
-                (l.source.id === toNode.id && l.target.id === fromNode.id)
-            );
+            nodes.push(tempNode);
+            
+            // Actualizar la simulación con el nuevo nodo
+            simulation.nodes(nodes);
+            simulation.alpha(0.1).restart();
+            
+            // Agregar visualmente al SVG (al grupo de nodos correcto)
+            if (!nodeElements || nodeElements.empty()) {
+                console.warn('⚠️  nodeElements no disponible');
+                return tempNode;
+            }
+            
+            const newNodeGroup = d3.select(nodeElements.node().parentNode)
+                .append('g')
+                .datum(tempNode)
+                .attr('class', 'node temp-node')
+                .attr('transform', `translate(${tempNode.x},${tempNode.y})`);
+            
+            newNodeGroup.append('circle')
+                .attr('class', 'node-circle node-unknown')
+                .attr('r', 40)
+                .style('opacity', 0.6)
+                .style('stroke-dasharray', '5,5');
+            
+            newNodeGroup.append('text')
+                .attr('class', 'node-icon')
+                .attr('y', 8)
+                .text('🌐');
+            
+            newNodeGroup.append('text')
+                .attr('class', 'node-label')
+                .attr('y', 60)
+                .text(serviceName);
+            
+            console.log(`🆕 Nodo temporal creado: ${serviceName}`);
+            
+            // Auto-eliminar después de 5 minutos
+            setTimeout(() => removeTemporaryNode(tempNode.id), 300000);
+            
+            return tempNode;
+        }
+        
+        function createTemporaryLink(fromNode, toNode) {
+            if (!simulation) {
+                console.warn('⚠️  Simulación no inicializada, no se puede crear link temporal');
+                return null;
+            }
+            
+            const tempLink = {
+                source: fromNode,
+                target: toNode,
+                network: 'temporary',
+                is_temporary: true
+            };
+            
+            links.push(tempLink);
+            
+            // Actualizar la simulación con el nuevo link
+            simulation.force('link').links(links);
+            simulation.alpha(0.1).restart();
+            
+            // Agregar visualmente al SVG (al grupo de links correcto)
+            if (!linkElements || linkElements.empty()) {
+                console.warn('⚠️  linkElements no disponible');
+                return tempLink;
+            }
+            
+            const newLinkGroup = d3.select(linkElements.node().parentNode)
+                .insert('g', ':first-child')
+                .datum(tempLink)
+                .attr('class', 'link-group temp-link');
+            
+            newLinkGroup.append('path')
+                .attr('class', 'link')
+                .attr('stroke', '#00d4ff')
+                .attr('stroke-width', 3)
+                .attr('stroke-opacity', 0.3)
+                .attr('stroke-dasharray', '5,5')
+                .attr('fill', 'none');
+            
+            newLinkGroup.append('circle')
+                .attr('class', 'link-particle')
+                .attr('r', 4)
+                .attr('fill', '#00d4ff')
+                .attr('opacity', 0)
+                .style('filter', 'drop-shadow(0 0 4px #00d4ff)');
+            
+            console.log(`🔗 Link temporal creado: ${fromNode.name} ↔ ${toNode.name}`);
+            
+            return tempLink;
+        }
+        
+        function removeTemporaryNode(nodeId) {
+            const index = nodes.findIndex(n => n.id === nodeId);
+            if (index !== -1 && nodes[index].is_temporary) {
+                console.log(`🗑️  Eliminando nodo temporal: ${nodes[index].name}`);
+                nodes.splice(index, 1);
+                
+                // Eliminar links asociados
+                links = links.filter(l => 
+                    (typeof l.source === 'object' ? l.source.id : l.source) !== nodeId && 
+                    (typeof l.target === 'object' ? l.target.id : l.target) !== nodeId
+                );
+                
+                // Actualizar simulación
+                if (simulation) {
+                    simulation.nodes(nodes);
+                    simulation.force('link').links(links);
+                    simulation.alpha(0.1).restart();
+                }
+                
+                // Refrescar visualización
+                d3.selectAll('.temp-node').filter(d => d.id === nodeId).remove();
+                d3.selectAll('.temp-link').filter(d => 
+                    (d.source.id === nodeId || d.target.id === nodeId)
+                ).remove();
+            }
+        }
+        
+        function updateLinkPositions() {
+            d3.selectAll('.link-group path').attr('d', d => {
+                const source = typeof d.source === 'object' ? d.source : nodes.find(n => n.id === d.source);
+                const target = typeof d.target === 'object' ? d.target : nodes.find(n => n.id === d.target);
+                if (!source || !target || !source.x || !target.x) return '';
+                return `M ${source.x} ${source.y} L ${target.x} ${target.y}`;
+            });
         }
 
         function animateRealTraffic(link, event) {
