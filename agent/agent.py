@@ -207,7 +207,7 @@ class KunnaAgent:
     async def handle_container_control(self, action: str, container_id: str):
         """Maneja comandos de control de contenedores"""
         try:
-            container = self.client.containers.get(container_id)
+            container = self.docker_client.containers.get(container_id)
             
             if action == 'start':
                 container.start()
