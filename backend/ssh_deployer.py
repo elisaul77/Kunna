@@ -232,11 +232,13 @@ class SSHDeployer:
                 --restart unless-stopped \
                 {network_flag} \
                 {cap_flag} \
+                -p 9000:9000 \
                 -v /var/run/docker.sock:/var/run/docker.sock:ro \
                 -e KUNNA_CENTRAL_URL='{central_url}' \
                 -e KUNNA_AGENT_TOKEN='{token}' \
                 -e KUNNA_SERVER_ID='{server_id}' \
                 -e KUNNA_HEARTBEAT_INTERVAL='10' \
+                -e KUNNA_TRAFFIC_PORT='9000' \
                 kunna/agent:latest"""
             
             if docker_network:

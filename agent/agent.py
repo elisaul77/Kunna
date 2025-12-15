@@ -15,18 +15,21 @@ import asyncio
 import websockets
 from datetime import datetime
 import psutil
+from aiohttp import web
 
 # Configuración desde variables de entorno
 CENTRAL_URL = os.getenv('KUNNA_CENTRAL_URL', 'ws://localhost:8000')
 AGENT_TOKEN = os.getenv('KUNNA_AGENT_TOKEN', 'default-token')
 SERVER_ID = os.getenv('KUNNA_SERVER_ID', socket.gethostname())
 HEARTBEAT_INTERVAL = int(os.getenv('KUNNA_HEARTBEAT_INTERVAL', '10'))
+TRAFFIC_API_PORT = int(os.getenv('KUNNA_TRAFFIC_PORT', '9000'))
 
 class KunnaAgent:
     def __init__(self):
         self.docker_client = None
         self.websocket = None
         self.server_info = self.get_server_info()
+        self.traffic_buffer = []  # Buffer para eventos de tráfico
         
     def log(self, message, level="INFO"):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -161,7 +164,6 @@ class KunnaAgent:
             "metrics": self.get_system_metrics(),
             "timestamp": datetime.now().isoformat()
         }
-    
     async def send_heartbeat(self, websocket):
         """Envía datos periódicamente al servidor central"""
         while True:
@@ -169,6 +171,22 @@ class KunnaAgent:
                 payload = self.build_payload()
                 await websocket.send(json.dumps(payload))
                 self.log(f"📊 Datos enviados: {len(payload['containers'])} contenedores")
+                
+                # Enviar eventos de tráfico buffereados
+                if self.traffic_buffer:
+                    traffic_events = self.traffic_buffer.copy()
+                    self.traffic_buffer.clear()
+                    
+                    for event in traffic_events:
+                        traffic_msg = {
+                            "type": "traffic_event",
+                            "event": event,
+                            "server_id": SERVER_ID
+                        }
+                        await websocket.send(json.dumps(traffic_msg))
+                    
+                    self.log(f"📡 Enviados {len(traffic_events)} eventos de tráfico")
+                
                 await asyncio.sleep(HEARTBEAT_INTERVAL)
             except Exception as e:
                 self.log(f"Error enviando heartbeat: {e}", "ERROR")
@@ -256,6 +274,85 @@ class KunnaAgent:
                 "container_id": container_id
             }
     
+    async def traffic_api_handler(self, request):
+        """Endpoint HTTP para recibir eventos de tráfico de apps locales"""
+        try:
+            data = await request.json()
+            
+            # Validar campos requeridos
+            if 'from_service' not in data or 'to_service' not in data:
+                return web.json_response(
+                    {"status": "error", "message": "from_service y to_service son requeridos"},
+                    status=400
+                )
+            
+            # Agregar metadata del servidor
+            event = {
+                "from_service": data['from_service'],
+                "to_service": data['to_service'],
+                "method": data.get('method', 'HTTP'),
+                "path": data.get('path', '/'),
+                "status": data.get('status', 200),
+                "duration": data.get('duration', 0),
+                "timestamp": data.get('timestamp', datetime.now().isoformat()),
+                "server_id": SERVER_ID,
+                "server_hostname": socket.gethostname()
+            }
+            
+            # Agregar al buffer (se enviará en el próximo heartbeat)
+            self.traffic_buffer.append(event)
+            
+            self.log(f"🚦 Tráfico recibido: {event['from_service']} → {event['to_service']}")
+            
+            return web.json_response({
+                "status": "ok",
+                "message": "Evento de tráfico recibido",
+                "buffered": len(self.traffic_buffer)
+            })
+            
+        except json.JSONDecodeError:
+            return web.json_response(
+                {"status": "error", "message": "JSON inválido"},
+                status=400
+            )
+        except Exception as e:
+            self.log(f"Error procesando tráfico: {e}", "ERROR")
+            return web.json_response(
+                {"status": "error", "message": str(e)},
+                status=500
+            )
+    
+    async def start_traffic_api(self):
+        """Inicia servidor HTTP para recibir eventos de tráfico"""
+        app = web.Application()
+        app.router.add_post('/traffic', self.traffic_api_handler)
+        app.router.add_get('/health', lambda req: web.json_response({"status": "healthy"}))
+        
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, '0.0.0.0', TRAFFIC_API_PORT)
+        await site.start()
+        
+        self.log(f"🌐 API de tráfico escuchando en puerto {TRAFFIC_API_PORT}")
+    
+    async def run(self):
+        """Ejecuta el agente"""
+        self.log(f"🚀 Iniciando kuNNA Agent")
+        self.log(f"   Servidor: {SERVER_ID}")
+        self.log(f"   Central: {CENTRAL_URL}")
+        self.log(f"   Intervalo: {HEARTBEAT_INTERVAL}s")
+        self.log(f"   API Tráfico: puerto {TRAFFIC_API_PORT}")
+        
+        if not self.connect_docker():
+            self.log("❌ No se pudo conectar a Docker, saliendo...", "ERROR")
+            sys.exit(1)
+        
+        # Iniciar API de tráfico y WebSocket en paralelo
+        await asyncio.gather(
+            self.start_traffic_api(),
+            self.send_data()
+        )
+    
     async def send_data(self):
         """Envía datos al servidor central"""
         ws_url = f"{CENTRAL_URL}/ws/agent/data"
@@ -298,19 +395,6 @@ class KunnaAgent:
             except Exception as e:
                 self.log(f"❌ Error: {e}", "ERROR")
                 await asyncio.sleep(5)
-    
-    async def run(self):
-        """Ejecuta el agente"""
-        self.log(f"🚀 Iniciando kuNNA Agent")
-        self.log(f"   Servidor: {SERVER_ID}")
-        self.log(f"   Central: {CENTRAL_URL}")
-        self.log(f"   Intervalo: {HEARTBEAT_INTERVAL}s")
-        
-        if not self.connect_docker():
-            self.log("❌ No se pudo conectar a Docker, saliendo...", "ERROR")
-            sys.exit(1)
-        
-        await self.send_data()
 
 def main():
     agent = KunnaAgent()

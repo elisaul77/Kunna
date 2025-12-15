@@ -658,6 +658,33 @@ async def agent_websocket(websocket: WebSocket):
                 server_id = server.id
                 
                 # Confirmar registro
+            
+            elif msg_type == 'traffic_event':
+                # Evento de tráfico desde agente remoto
+                event = data.get('event', {})
+                print(f"🚦 Traffic event recibido: {event.get('from_service')} → {event.get('to_service')}")
+                
+                # Reenviar al WebSocket de tráfico con metadata del servidor
+                traffic_msg = {
+                    "type": "request",
+                    "from": event.get('from_service'),
+                    "to": event.get('to_service'),
+                    "method": event.get('method', 'HTTP'),
+                    "path": event.get('path', '/'),
+                    "status": event.get('status', 200),
+                    "duration": event.get('duration', 0),
+                    "timestamp": event.get('timestamp'),
+                    "server_id": event.get('server_id'),
+                    "server_hostname": event.get('server_hostname'),
+                    "is_remote": True
+                }
+                
+                # Broadcast a clientes SCADA
+                if manager.active_connections:
+                    print(f"📡 Broadcasting a {len(manager.active_connections)} clientes SCADA")
+                    await manager.broadcast(traffic_msg)
+                else:
+                    print("⚠️  No hay clientes SCADA conectados")
                 await websocket.send_json({
                     "type": "registration_confirmed",
                     "server_id": server_id,
