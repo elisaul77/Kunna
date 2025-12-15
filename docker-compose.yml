@@ -9,6 +9,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./backend/app.py:/app/app.py
+      - ./agent:/app/agent:ro
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped

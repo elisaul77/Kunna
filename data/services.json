@@ -138,5 +138,213 @@
       "jupyter_default"
     ],
     "createdAt": "2025-12-14T22:05:39.827994"
+  },
+  {
+    "id": "11",
+    "name": "kunna-backend",
+    "description": "Contenedor Docker: kunna_backend:latest",
+    "url": "http://localhost:8000",
+    "icon": "⚙️",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "app_group": "kunna",
+    "networks": [
+      "kunna_kunna-network"
+    ],
+    "createdAt": "2025-12-14T23:16:35.987910"
+  },
+  {
+    "id": "12",
+    "name": "kunna-frontend",
+    "description": "Contenedor Docker: kunna_frontend:latest",
+    "url": "http://localhost:3000",
+    "icon": "🎨",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "app_group": "kunna",
+    "networks": [
+      "kunna_kunna-network"
+    ],
+    "createdAt": "2025-12-14T23:16:35.991538"
+  },
+  {
+    "id": "13",
+    "name": "kunna-docker-monitor",
+    "description": "Contenedor Docker: kunna_docker-monitor:latest",
+    "url": "#",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "app_group": "kunna",
+    "networks": [
+      "kunna_kunna-network"
+    ],
+    "createdAt": "2025-12-14T23:16:35.995448"
+  },
+  {
+    "id": "14",
+    "name": "mlflow-server",
+    "description": "Contenedor Docker: ghcr.io/mlflow/mlflow:latest",
+    "url": "http://localhost:5000",
+    "icon": "🤖",
+    "category": "ML & AI",
+    "color": "#0194e2",
+    "isActive": true,
+    "status": "running",
+    "app_group": "mlflow",
+    "networks": [
+      "mlflow_default"
+    ],
+    "createdAt": "2025-12-14T23:16:35.998619"
+  },
+  {
+    "id": "15",
+    "name": "jupyter_cadquery",
+    "description": "Contenedor Docker: jupyter_cadquery:custom",
+    "url": "http://localhost:8888",
+    "icon": "📊",
+    "category": "Data Science",
+    "color": "#F37626",
+    "isActive": true,
+    "status": "running",
+    "app_group": "jupyter",
+    "networks": [
+      "jupyter_default"
+    ],
+    "createdAt": "2025-12-14T23:16:36.002269"
+  },
+  {
+    "id": "16",
+    "name": "kunna-backend",
+    "description": "Contenedor Docker: kunna_backend:latest",
+    "url": "http://localhost:8000",
+    "icon": "⚙️",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "app_group": "kunna",
+    "networks": [
+      "kunna_kunna-network"
+    ],
+    "createdAt": "2025-12-14T23:16:56.831927"
+  },
+  {
+    "id": "17",
+    "name": "kunna-docker-monitor",
+    "description": "Contenedor Docker: kunna_docker-monitor:latest",
+    "url": "#",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "app_group": "kunna",
+    "networks": [
+      "kunna_kunna-network"
+    ],
+    "createdAt": "2025-12-14T23:16:56.841065"
+  },
+  {
+    "id": "18",
+    "name": "mlflow-server",
+    "description": "Contenedor Docker: ghcr.io/mlflow/mlflow:latest",
+    "url": "http://localhost:5000",
+    "icon": "🤖",
+    "category": "ML & AI",
+    "color": "#0194e2",
+    "isActive": true,
+    "status": "running",
+    "app_group": "mlflow",
+    "networks": [
+      "mlflow_default"
+    ],
+    "createdAt": "2025-12-14T23:16:56.845461"
+  },
+  {
+    "id": "19",
+    "name": "jupyter_cadquery",
+    "description": "Contenedor Docker: jupyter_cadquery:custom",
+    "url": "http://localhost:8888",
+    "icon": "📊",
+    "category": "Data Science",
+    "color": "#F37626",
+    "isActive": true,
+    "status": "running",
+    "app_group": "jupyter",
+    "networks": [
+      "jupyter_default"
+    ],
+    "createdAt": "2025-12-14T23:16:56.848829"
+  },
+  {
+    "id": "20",
+    "name": "kunna-backend",
+    "description": "Contenedor Docker: kunna_backend:latest",
+    "url": "http://localhost:8000",
+    "icon": "⚙️",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "app_group": "kunna",
+    "networks": [
+      "kunna_kunna-network"
+    ],
+    "createdAt": "2025-12-15T01:07:03.859971"
+  },
+  {
+    "id": "21",
+    "name": "kunna-frontend",
+    "description": "Contenedor Docker: kunna_frontend:latest",
+    "url": "http://localhost:3000",
+    "icon": "🎨",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "app_group": "kunna",
+    "networks": [
+      "kunna_kunna-network"
+    ],
+    "createdAt": "2025-12-15T01:07:03.862730"
+  },
+  {
+    "id": "22",
+    "name": "mlflow-server",
+    "description": "Contenedor Docker: ghcr.io/mlflow/mlflow:latest",
+    "url": "http://localhost:5000",
+    "icon": "🤖",
+    "category": "ML & AI",
+    "color": "#0194e2",
+    "isActive": true,
+    "status": "running",
+    "app_group": "mlflow",
+    "networks": [
+      "mlflow_default"
+    ],
+    "createdAt": "2025-12-15T01:07:03.870967"
+  },
+  {
+    "id": "23",
+    "name": "jupyter_cadquery",
+    "description": "Contenedor Docker: jupyter_cadquery:custom",
+    "url": "http://localhost:8888",
+    "icon": "📊",
+    "category": "Data Science",
+    "color": "#F37626",
+    "isActive": true,
+    "status": "running",
+    "app_group": "jupyter",
+    "networks": [
+      "jupyter_default"
+    ],
+    "createdAt": "2025-12-15T01:07:03.876210"
   }
 ]
