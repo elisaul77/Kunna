@@ -55,6 +55,38 @@
         .toolbar-actions {
             display: flex;
             gap: 12px;
+            align-items: center;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .checkbox-container:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent-primary);
+        }
+
+        .checkbox-container label {
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            color: var(--text-secondary);
+            user-select: none;
         }
 
         .btn {
@@ -397,6 +429,10 @@
             </div>
         </div>
         <div class="toolbar-actions">
+            <div class="checkbox-container" title="Ocultar el agente kunna para simplificar la visualización">
+                <input type="checkbox" id="showAgentCheckbox" checked onchange="toggleAgentVisibility()">
+                <label for="showAgentCheckbox">Mostrar kunna-agent</label>
+            </div>
             <a href="/" class="btn">📊 Dashboard</a>
             <a href="/servers.html" class="btn" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">🖥️ Servidores</a>
             <button class="btn" onclick="refreshTopology()">🔄 Actualizar</button>
@@ -460,6 +496,7 @@
         let linkElements = null;
         let ws = null;
         let trafficQueue = [];
+        let showAgent = true; // Control de visibilidad del agente
 
         async function loadTopology() {
             try {
@@ -496,6 +533,15 @@
             `).join('');
         }
 
+        function toggleAgentVisibility() {
+            showAgent = document.getElementById('showAgentCheckbox').checked;
+            
+            // Recargar topología si ya está cargada
+            if (topologyData) {
+                initializeTopology();
+            }
+        }
+
         function updateNodeStates(newData) {
             if (!nodeElements) return;
 
@@ -527,9 +573,14 @@
             nodes = [];
             links = [];
 
-            // Crear nodos por servicio
+            // Crear nodos por servicio (filtrar kunna-agent si está deshabilitado)
             topologyData.groups.forEach((group, groupIndex) => {
                 group.services.forEach((service, serviceIndex) => {
+                    // Filtrar kunna-agent si showAgent es false
+                    if (!showAgent && service.name === 'kunna-agent') {
+                        return; // Saltar este nodo
+                    }
+                    
                     nodes.push({
                         id: service.id,
                         name: service.name,
@@ -546,7 +597,23 @@
             });
 
             // Crear enlaces SOLO entre servicios que comparten red
+            // (excluir enlaces de/hacia kunna-agent si está oculto)
             topologyData.connections.forEach(conn => {
+                // Si showAgent es false, filtrar enlaces que incluyan kunna-agent
+                if (!showAgent) {
+                    const sourceNode = topologyData.groups
+                        .flatMap(g => g.services)
+                        .find(s => s.id === conn.source);
+                    const targetNode = topologyData.groups
+                        .flatMap(g => g.services)
+                        .find(s => s.id === conn.target);
+                    
+                    if ((sourceNode && sourceNode.name === 'kunna-agent') || 
+                        (targetNode && targetNode.name === 'kunna-agent')) {
+                        return; // Saltar este enlace
+                    }
+                }
+                
                 links.push({
                     source: conn.source,
                     target: conn.target,
