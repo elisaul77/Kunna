@@ -136,12 +136,22 @@ def get_services(category: Optional[str] = None, active: Optional[bool] = None):
     # Agregar servicios remotos de los agentes
     remote_containers = agent_manager.get_all_containers()
     for container in remote_containers:
+        # Extraer primer puerto expuesto (formato: "HostPort:ContainerPort")
+        ports = container.get('ports', [])
+        port = ports[0].split(':')[0] if ports else None
+        
+        # Construir URL usando la IP real del servidor (server_id) y el puerto expuesto
+        if port:
+            url = f"http://{container['server_id']}:{port}"
+        else:
+            url = f"http://{container['server_id']}"
+        
         # Convertir contenedor remoto a formato de servicio
         remote_service = {
             "id": f"remote-{container['server_id']}-{container['id']}",
             "name": container['name'],
             "description": f"Remote: {container['image']} on {container['server_hostname']}",
-            "url": f"http://{container['server_ip']}",
+            "url": url,
             "icon": "🌐",
             "category": "Remote Services",
             "color": "#9333ea",
