@@ -935,6 +935,11 @@
         function handleTrafficEvent(event) {
             console.log('🚦 Tráfico en tiempo real:', event.method, event.path, '→', event.status);
             
+            // Filtrar solo auto-referencias (servicio llamándose a sí mismo)
+            if (event.from === event.to) {
+                return; // Ignorar tráfico del tipo "service → service"
+            }
+            
             // Buscar o crear nodos
             let fromNode = nodes.find(n => n.name === event.from || n.name.includes(event.from) || event.from.includes(n.name));
             let toNode = nodes.find(n => n.name === event.to || n.name.includes(event.to) || event.to.includes(n.name));
