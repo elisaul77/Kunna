@@ -46,33 +46,30 @@ Durante el comando `docker run`, el backend inyecta las siguientes variables cr�
 | `KUNNA_AGENT_TOKEN` | Generado por BE | Token único para autenticar la conexión WebSocket del agente. |
 | `KUNNA_SERVER_ID` | `hostname` remoto | Identificador único del servidor en el dashboard. |
 | `KUNNA_TRAFFIC_PORT` | Hardcoded (9000) | Puerto donde el agente recibe eventos SCADA de apps locales. |
+| `KUNNA_STATIC_ROUTES` | Backend (Opcional) | Rutas de red persistentes (ej: `10.x.x.0/24 via 172.18.0.2`) para VPNs. |
 
 ---
 
 ## 🛣️ Configuración de Red Avanzada (VPN/WireGuard)
 
-Si el despliegue se realiza en una red específica (ej: `my_docker_network`), kuNNA aplica una lógica de ruteo adicional para garantizar la conectividad:
+kuNNA soporta tres modos de red para adaptarse a cualquier infraestructura:
 
-### 1. Aislamiento y Conectividad
-El agente se une a la red Docker especificada mediante el flag `--network`. Esto le permite "ver" a otros contenedores en esa misma red privada.
+### 1. Modo Bridge (Default)
+El agente corre en una red aislada. Si se especifica una red personalizada (ej: `my_docker_network`), el backend detecta automáticamente el Gateway de esa red para configurar rutas estáticas si es necesario.
 
-### 2. Ruteo Inteligente
-Si se detecta una red de tipo VPN, el sistema realiza los siguientes pasos automáticamente:
+### 2. Modo Host
+Recomendado para servidores donde se quiere monitorear todas las interfaces de red directamente. El agente tendrá la misma IP que el servidor físico.
 
-```mermaid
-graph TD
-    A[Inicio Contenedor Agente] --> B{¿Red VPN detectada?}
-    B -- Sí --> C[docker inspect gateway/vpn]
-    C --> D[Obtener IP del Gateway VPN]
-    D --> E[docker exec: ip route add 10.x.x.0/24 via GW]
-    E --> F[Conectividad Completa]
-    B -- No --> F
+### 3. Ruteo Inteligente y Persistencia
+Si se detecta una red de tipo VPN o el usuario especifica rutas, el sistema inyecta `KUNNA_STATIC_ROUTES`. El agente, al iniciar, ejecuta:
+
+```python
+# Lógica interna del agente
+for route in static_routes:
+    os.system(f"ip route add {route}")
 ```
 
-**Comando ejecutado internamente:**
-```bash
-docker exec kunna-agent ip route add 10.x.x.0/24 via [GATEWAY_IP]
-```
+Esto garantiza que, incluso si el contenedor se reinicia, la conexión hacia el servidor central a través de la VPN (WireGuard) se restablezca automáticamente.
 
 ---
 

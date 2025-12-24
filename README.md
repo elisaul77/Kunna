@@ -35,7 +35,19 @@ docker-compose up -d
 - **Filtros avanzados** por categoría y estado
 - **CORS habilitado** para desarrollo
 
-## 📚 Uso de la API
+### 📡 Monitoreo Remoto (Agentes)
+- **Despliegue SSH automático** desde la interfaz
+- **Soporte para VPN/WireGuard** con ruteo persistente
+- **Monitoreo en tiempo real** vía WebSockets
+- **Compatibilidad Multi-Cloud** (GCP, AWS, On-premise)
+- **Detección automática de IPs** locales y de VPN
+
+## 📚 Documentación Detallada
+
+- [Arquitectura y Funcionamiento](docs/ARCHITECTURE.md)
+- [Guía de Despliegue Remoto](docs/USER_GUIDE_DEPLOYMENT.md)
+- [Detalle Técnico SSH y Red](docs/SSH_DEPLOYMENT_DETAIL.md)
+- [Guía de la API (Swagger)](docs/SWAGGER_GUIDE.md)
 
 ### Endpoints Principales
 
