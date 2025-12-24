@@ -1,8 +1,28 @@
 # kuNNA 🎯
 
-**Tu ventana de enlaces a todos tus servicios**
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa)](https://github.com/sponsors/elisaul77)
+[![PayPal](https://img.shields.io/badge/Donate-PayPal-blue)](https://paypal.me/eflorezp)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00)](https://buymeacoffee.com/elisaul77)
 
-kuNNA es un dashboard elegante y funcional que te permite gestionar y acceder a todos tus servicios locales y en la nube desde un solo lugar. Olvídate de memorizar IPs y puertos.
+> 🚀 Dashboard & Remote Monitoring System for Docker Containers
+
+kuNNA es un orquestador de servicios Docker con capacidad de monitoreo remoto mediante agentes SSH. Gestiona contenedores locales, en VPN y en la nube desde una interfaz unificada con visualización en tiempo real.
+
+---
+
+## ✨ Características Principales
+
+- 🐳 **Gestión de Flota Docker**: Control centralizado de múltiples servidores
+- 🔄 **Tiempo Real**: Monitoreo y actualizaciones en vivo vía WebSocket
+- 🤖 **Auto-Discovery**: Detección automática de contenedores Docker
+- 🌐 **Multi-Cloud**: Soporte para infraestructura local, VPN y cloud
+- 📊 **Visualización SCADA**: Topología interactiva de servicios
+- 🔐 **Despliegue SSH**: Deploy automatizado de agentes remotos
+- 🛣️ **Ruteo Inteligente**: Soporte nativo para VPN/WireGuard
+
 
 ## 🚀 Inicio Rápido
 
@@ -264,7 +284,40 @@ El proyecto incluye varios scripts útiles organizados en la carpeta [scripts/](
 - **[Herramientas](scripts/tools/)** - Librerías como `kunna_tracer.py`
 
 Ver la [documentación de scripts](scripts/README.md) para detalles completos.
-## �🚀 Próximas Características
+## 🤝 Contribuciones
+
+¡Las contribuciones son bienvenidas! Por favor lee nuestra [Guía de Contribución](CONTRIBUTING.md) para conocer cómo contribuir al proyecto.
+
+### 🌟 Formas de Contribuir
+
+- 🐛 Reportar bugs
+- 💡 Proponer nuevas características
+- 📝 Mejorar la documentación
+- 🔧 Enviar Pull Requests
+- ⭐ Dar una estrella al proyecto
+
+## 💖 Patrocinadores
+
+Si kuNNA te ha sido útil, considera apoyar su desarrollo:
+
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-pink?logo=github)](https://github.com/sponsors/elisaul77)
+[![PayPal](https://img.shields.io/badge/Donate-PayPal-blue?logo=paypal)](https://www.paypal.com/paypalme/elisaul77)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/elisaul77)
+
+Ver más opciones de patrocinio en [FUNDING.md](FUNDING.md)
+
+### 🎁 Beneficios de Patrocinio
+
+- **🌟 Bronze ($5/mes)**: Reconocimiento en README + Badge de patrocinador
+- **🥈 Silver ($15/mes)**: Todo lo anterior + Soporte prioritario
+- **🥇 Gold ($50/mes)**: Todo lo anterior + Mención en lanzamientos + Logo en sitio web
+- **💎 Platinum ($100/mes)**: Todo lo anterior + Consultoría directa + Características personalizadas
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT. Ver el archivo [LICENSE](LICENSE) para más detalles.
+
+## 🚀 Próximas Características
 
 - [ ] Sistema de autenticación
 - [ ] Temas claro/oscuro
@@ -274,14 +327,32 @@ Ver la [documentación de scripts](scripts/README.md) para detalles completos.
 - [ ] Organización por grupos/proyectos
 - [ ] Shortcuts de teclado
 
-## 📝 Licencia
+## 👨‍💻 Autor
 
-MIT License - Libre para usar y modificar
+**Eli Saul Florez Perez**
 
-## 🤝 Contribuir
+- GitHub: [@elisaul77](https://github.com/elisaul77)
+- Email: wcwxtctco@mozmail.com
 
-¿Tienes ideas para mejorar kuNNA? ¡Son bienvenidas!
+## 🙏 Agradecimientos
+
+Gracias a todos los contribuidores que han hecho posible este proyecto. Si kuNNA te ha sido útil, considera:
+
+- ⭐ Dar una estrella al proyecto
+- 🐛 Reportar bugs o sugerir características
+- 💖 Convertirte en patrocinador
+- 📢 Compartir el proyecto con otros
 
 ---
 
-**Desarrollado con ❤️ para simplificar tu workflow**
+<div align="center">
+  
+**Desarrollado con ❤️ para simplificar tu workflow de Docker**
+
+[![Made with Python](https://img.shields.io/badge/Made%20with-Python-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![Powered by FastAPI](https://img.shields.io/badge/Powered%20by-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+
+[⬆ Volver arriba](#-kunna)
+
+</div>
