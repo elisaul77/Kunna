@@ -23,8 +23,9 @@ kuNNA es un orquestador de servicios Docker con capacidad de monitoreo remoto me
 - 🔐 **Despliegue SSH**: Deploy automatizado de agentes remotos
 - 🛣️ **Ruteo Inteligente**: Soporte nativo para VPN/WireGuard
 
+![kuNNA SCADA Monitor](docs/Screen/Scada.jpg)
 
-## 🚀 Inicio Rápido
+---
 
 ```bash
 cd /home/elisaul77/Documentos/Docker/kunna
@@ -47,7 +48,15 @@ docker-compose up -d
 - **Responsive** - funciona en desktop y móvil
 - **Animaciones suaves** para mejor UX
 
-### 🔧 Backend (API REST)
+### � Visualización SCADA
+- **Topología interactiva** de servicios y dependencias
+- **Monitoreo de tráfico** en tiempo real
+- **Estado visual** de contenedores (Running, Stopped, Error)
+- **Agrupación lógica** por aplicaciones
+
+![SCADA Topology](docs/Screen/Scada.jpg)
+
+### �🔧 Backend (API REST)
 - **FastAPI** - API moderna y rápida
 - **Documentación automática** con Swagger/OpenAPI
 - **CRUD completo** para gestión de servicios
