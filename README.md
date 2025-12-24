@@ -256,13 +256,8 @@ ports:
   - "3001:80"  # Cambiar 3000 por otro puerto
 ```
 
-## 🎯 Servicios Preconfigurados
+## 📚 Documentación
 
-kuNNA viene con estos servicios por defecto:
-- **MLflow** (http://localhost:5000) - Tracking de ML
-- **kuNNA Dashboard** (http://localhost:3000) - Este dashboard
-
-## � Documentación
 
 Para información detallada sobre el proyecto, consulta la documentación en la carpeta [docs/](docs/):
 - **[Architecture & Design](docs/ARCHITECTURE.md)** - **Documentación Definitiva** con diagramas de funcionamiento.
