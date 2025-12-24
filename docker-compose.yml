@@ -4,8 +4,7 @@ services:
   backend:
     build: ./backend
     container_name: kunna-backend
-    ports:
-      - "8000:8000"
+    network_mode: host
     volumes:
       - ./data:/app/data
       - ./backend/app.py:/app/app.py
@@ -14,8 +13,6 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
-    networks:
-      - kunna-network
 
   frontend:
     build: ./frontend
@@ -35,15 +32,15 @@ services:
       context: .
       dockerfile: Dockerfile.monitor
     container_name: kunna-docker-monitor
+    network_mode: host
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
       - backend
     restart: unless-stopped
-    networks:
-      - kunna-network
     environment:
       - PYTHONUNBUFFERED=1
+      - KUNNA_API_URL=http://localhost:8000/api
 
 networks:
   kunna-network:

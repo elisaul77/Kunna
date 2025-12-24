@@ -9,6 +9,8 @@ from datetime import datetime
 import time
 import asyncio
 import docker
+import psutil
+import socket
 
 # Import agent manager and ssh deployer
 from agent_manager import agent_manager
@@ -147,6 +149,37 @@ def read_root():
 @app.get("/api/health")
 def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+
+@app.get("/api/system/ips")
+def get_system_ips():
+    """Obtiene todas las IPs disponibles en las interfaces de red"""
+    ips = []
+    interfaces = psutil.net_if_addrs()
+    for interface_name, interface_addresses in interfaces.items():
+        for address in interface_addresses:
+            if address.family == socket.AF_INET:
+                # Ignorar localhost si hay otras IPs
+                if address.address == "127.0.0.1":
+                    continue
+                
+                # Determinar tipo de red (heurística)
+                net_type = "Local"
+                if interface_name.startswith(('wg', 'tun', 'vpn', 'tailscale')):
+                    net_type = "VPN"
+                elif interface_name.startswith(('docker', 'br-', 'veth')):
+                    net_type = "Docker"
+                
+                ips.append({
+                    "interface": interface_name,
+                    "address": address.address,
+                    "type": net_type
+                })
+    
+    # Si no hay nada más que localhost, incluirlo
+    if not ips:
+        ips.append({"interface": "lo", "address": "127.0.0.1", "type": "Loopback"})
+        
+    return {"ips": ips}
 
 @app.get("/api/services", response_model=List[Service])
 def get_services(category: Optional[str] = None, active: Optional[bool] = None):

@@ -457,6 +457,16 @@
                     <textarea id="server-key" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----"></textarea>
                 </div>
 
+                <div class="form-group">
+                    <label>URL Central de Reporte (IP de este PC) *</label>
+                    <select id="central-url" style="width: 100%; padding: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" required>
+                        <option value="">Cargando IPs disponibles...</option>
+                    </select>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                        Selecciona la IP por la cual el servidor remoto puede ver a este PC (ej: IP de VPN o IP Local).
+                    </p>
+                </div>
+
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeAddServerModal()">
                         Cancelar
@@ -588,8 +598,34 @@
             `).join('') + '</div>';
         }
 
-        function openAddServerModal() {
+        async function openAddServerModal() {
             document.getElementById('addServerModal').classList.add('active');
+            
+            // Cargar IPs disponibles
+            const select = document.getElementById('central-url');
+            select.innerHTML = '<option value="">Cargando IPs...</option>';
+            
+            try {
+                const response = await fetch(`${API_URL}/system/ips`);
+                const data = await response.json();
+                
+                select.innerHTML = '';
+                data.ips.forEach(ip => {
+                    const option = document.createElement('option');
+                    option.value = `ws://${ip.address}:8000`;
+                    option.textContent = `${ip.address} (${ip.interface} - ${ip.type})`;
+                    select.appendChild(option);
+                });
+                
+                // Intentar pre-seleccionar la IP de la VPN si existe
+                const vpnIp = data.ips.find(ip => ip.type === 'VPN');
+                if (vpnIp) {
+                    select.value = `ws://${vpnIp.address}:8000`;
+                }
+            } catch (error) {
+                console.error('Error cargando IPs:', error);
+                select.innerHTML = '<option value="ws://localhost:8000">localhost (Error al cargar)</option>';
+            }
         }
 
         function closeAddServerModal() {
@@ -601,59 +637,77 @@
         async function deployAgent(event) {
             event.preventDefault();
             
-            const ip = document.getElementById('server-ip').value;
-            const port = document.getElementById('server-port').value;
-            const user = document.getElementById('server-user').value;
-            const authMethod = document.getElementById('auth-method').value;
+            const host = document.getElementById('server-ip').value;
+            const port = parseInt(document.getElementById('server-port').value);
+            const username = document.getElementById('server-user').value;
+            const auth_method = document.getElementById('auth-method').value;
             const password = document.getElementById('server-password').value;
-            const sshKey = document.getElementById('server-key').value;
+            const private_key = document.getElementById('server-key').value;
+            const central_url = document.getElementById('central-url').value;
 
             // Mostrar progreso
             document.getElementById('deployment-progress').style.display = 'block';
             const logsDiv = document.getElementById('deployment-logs');
+            const progressFill = document.getElementById('progress-fill');
             logsDiv.innerHTML = '';
 
             function addLog(message) {
-                logsDiv.innerHTML += `<div>${message}</div>`;
+                const div = document.createElement('div');
+                div.textContent = message;
+                if (message.includes('❌')) div.style.color = 'var(--danger)';
+                if (message.includes('✅')) div.style.color = 'var(--success)';
+                logsDiv.appendChild(div);
                 logsDiv.scrollTop = logsDiv.scrollHeight;
             }
 
             try {
-                addLog('🔍 Conectando al servidor...');
-                document.getElementById('progress-fill').style.width = '20%';
+                addLog(`🚀 Iniciando despliegue en ${host}...`);
+                progressFill.style.width = '10%';
                 
-                // TODO: Implementar llamada real al backend
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                addLog('✅ Conexión establecida');
-                document.getElementById('progress-fill').style.width = '40%';
-                
-                addLog('📦 Verificando Docker...');
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                addLog('✅ Docker encontrado');
-                document.getElementById('progress-fill').style.width = '60%';
-                
-                addLog('🚀 Desplegando kuNNA Agent...');
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                addLog('✅ Agente desplegado correctamente');
-                document.getElementById('progress-fill').style.width = '80%';
-                
-                addLog('🔗 Esperando conexión del agente...');
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                addLog('✅ Agente conectado!');
-                document.getElementById('progress-fill').style.width = '100%';
-                
-                addLog('');
-                addLog('🎉 Deployment completado exitosamente!');
+                const response = await fetch(`${API_URL}/remote/deploy`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        host,
+                        port,
+                        username,
+                        auth_method,
+                        password: auth_method === 'password' ? password : null,
+                        private_key: auth_method === 'key' ? private_key : null,
+                        central_url
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.detail || 'Error en el despliegue');
+                }
+
+                // Mostrar pasos del backend
+                if (result.steps) {
+                    result.steps.forEach((step, index) => {
+                        setTimeout(() => {
+                            addLog(step.step);
+                            progressFill.style.width = `${20 + (index * 10)}%`;
+                        }, index * 500);
+                    });
+                }
+
+                addLog('🎉 ¡Agente desplegado y conectado exitosamente!');
+                progressFill.style.width = '100%';
                 
                 setTimeout(() => {
                     closeAddServerModal();
                     loadServers();
-                }, 2000);
+                }, 3000);
                 
             } catch (error) {
                 addLog(`❌ Error: ${error.message}`);
-                document.getElementById('progress-fill').style.width = '100%';
-                document.getElementById('progress-fill').style.background = 'var(--danger)';
+                progressFill.style.width = '100%';
+                progressFill.style.background = 'var(--danger)';
             }
         }
 
