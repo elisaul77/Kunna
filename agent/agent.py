@@ -23,6 +23,7 @@ AGENT_TOKEN = os.getenv('KUNNA_AGENT_TOKEN', 'default-token')
 SERVER_ID = os.getenv('KUNNA_SERVER_ID', socket.gethostname())
 HEARTBEAT_INTERVAL = int(os.getenv('KUNNA_HEARTBEAT_INTERVAL', '10'))
 TRAFFIC_API_PORT = int(os.getenv('KUNNA_TRAFFIC_PORT', '9000'))
+STATIC_ROUTES = os.getenv('KUNNA_STATIC_ROUTES', None)
 
 class KunnaAgent:
     def __init__(self):
@@ -30,7 +31,19 @@ class KunnaAgent:
         self.websocket = None
         self.server_info = self.get_server_info()
         self.traffic_buffer = []  # Buffer para eventos de tráfico
+        self.setup_static_routes()
         
+    def setup_static_routes(self):
+        """Configura rutas estáticas si se proporcionan vía variable de entorno"""
+        if STATIC_ROUTES:
+            self.log(f"🛣️ Configurando rutas estáticas: {STATIC_ROUTES}")
+            try:
+                # Ejemplo: "10.x.x.0/24 via 172.18.0.2"
+                os.system(f"ip route add {STATIC_ROUTES} || true")
+                self.log("✅ Rutas configuradas correctamente")
+            except Exception as e:
+                self.log(f"❌ Error configurando rutas: {e}", "ERROR")
+
     def log(self, message, level="INFO"):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"[{timestamp}] {level}: {message}", flush=True)
@@ -47,8 +60,25 @@ class KunnaAgent:
         }
     
     def get_ip_address(self):
-        """Obtiene la IP del servidor"""
+        """Obtiene la IP del servidor, priorizando VPN o interfaces físicas"""
         try:
+            interfaces = psutil.net_if_addrs()
+            
+            # 1. Buscar en interfaces de VPN conocidas
+            for iface, addrs in interfaces.items():
+                if any(vpn_name in iface.lower() for vpn_name in ['wg', 'tun', 'tap', 'vpn']):
+                    for addr in addrs:
+                        if addr.family == socket.AF_INET:
+                            return addr.address
+            
+            # 2. Buscar en interfaces físicas (no docker, no loopback)
+            for iface, addrs in interfaces.items():
+                if not any(x in iface.lower() for x in ['docker', 'lo', 'veth', 'br-']):
+                    for addr in addrs:
+                        if addr.family == socket.AF_INET:
+                            return addr.address
+
+            # 3. Fallback al método tradicional
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(("8.8.8.8", 80))
             ip = s.getsockname()[0]

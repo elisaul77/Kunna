@@ -462,9 +462,23 @@
                     <select id="central-url" style="width: 100%; padding: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);" required>
                         <option value="">Cargando IPs disponibles...</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Modo de Red del Agente</label>
+                    <select id="network-mode" onchange="toggleCustomNetwork()" style="width: 100%; padding: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                        <option value="bridge">Bridge (Estándar)</option>
+                        <option value="host">Host (Recomendado para VPN/WireGuard)</option>
+                        <option value="custom">Red Personalizada...</option>
+                    </select>
                     <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">
-                        Selecciona la IP por la cual el servidor remoto puede ver a este PC (ej: IP de VPN o IP Local).
+                        <b>Host:</b> El agente verá las interfaces de red (como wg0) directamente.
                     </p>
+                </div>
+
+                <div class="form-group" id="custom-network-group" style="display: none;">
+                    <label>Nombre de la Red Docker</label>
+                    <input type="text" id="custom-network" placeholder="ej: my_docker_network">
                 </div>
 
                 <div class="form-actions">
@@ -499,6 +513,11 @@
             const method = document.getElementById('auth-method').value;
             document.getElementById('password-group').style.display = method === 'password' ? 'block' : 'none';
             document.getElementById('key-group').style.display = method === 'key' ? 'block' : 'none';
+        }
+
+        function toggleCustomNetwork() {
+            const mode = document.getElementById('network-mode').value;
+            document.getElementById('custom-network-group').style.display = mode === 'custom' ? 'block' : 'none';
         }
 
         async function loadServers() {
@@ -644,6 +663,11 @@
             const password = document.getElementById('server-password').value;
             const private_key = document.getElementById('server-key').value;
             const central_url = document.getElementById('central-url').value;
+            
+            let docker_network = null;
+            const networkMode = document.getElementById('network-mode').value;
+            if (networkMode === 'host') docker_network = 'host';
+            else if (networkMode === 'custom') docker_network = document.getElementById('custom-network').value;
 
             // Mostrar progreso
             document.getElementById('deployment-progress').style.display = 'block';
@@ -676,7 +700,8 @@
                         auth_method,
                         password: auth_method === 'password' ? password : null,
                         private_key: auth_method === 'key' ? private_key : null,
-                        central_url
+                        central_url,
+                        docker_network
                     })
                 });
 

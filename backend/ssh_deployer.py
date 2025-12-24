@@ -226,19 +226,42 @@ class SSHDeployer:
             # Construir comando base
             network_flag = f"--network {docker_network}" if docker_network else ""
             cap_flag = "--cap-add=NET_ADMIN" if docker_network else ""
+            port_flag = "-p 9000:9000" if docker_network != "host" else ""
             
+            # Lógica de rutas estáticas para VPN
+            static_routes_env = ""
+            if docker_network and docker_network != "host":
+                print(f"🔍 Buscando gateway VPN en red: {docker_network}")
+                # Buscar contenedor de WireGuard (wg-easy, wireguard, vpn)
+                wg_cmd = f"{docker_cmd} ps --filter 'name=wg' --filter 'name=vpn' --format '{{{{.Names}}}}' | head -n 1"
+                exit_code, wg_container, _ = self.execute_command(wg_cmd)
+                
+                if exit_code == 0 and wg_container.strip():
+                    wg_name = wg_container.strip()
+                    print(f"   Contenedor VPN detectado: {wg_name}")
+                    
+                    # Obtener IP del gateway en la red seleccionada
+                    ip_cmd = f"{docker_cmd} inspect {wg_name} --format '{{{{.NetworkSettings.Networks.{docker_network}.IPAddress}}}}'"
+                    exit_code, wg_ip, _ = self.execute_command(ip_cmd)
+                    
+                    if exit_code == 0 and wg_ip.strip():
+                        wg_ip = wg_ip.strip()
+                        static_routes_env = f"-e KUNNA_STATIC_ROUTES='10.x.x.0/24 via {wg_ip}'"
+                        print(f"✅ Ruta estática inyectada: 10.x.x.0/24 via {wg_ip}")
+
             run_cmd = f"""{docker_cmd} run -d \
                 --name kunna-agent \
                 --restart unless-stopped \
                 {network_flag} \
                 {cap_flag} \
-                -p 9000:9000 \
+                {port_flag} \
                 -v /var/run/docker.sock:/var/run/docker.sock:ro \
                 -e KUNNA_CENTRAL_URL='{central_url}' \
                 -e KUNNA_AGENT_TOKEN='{token}' \
                 -e KUNNA_SERVER_ID='{server_id}' \
                 -e KUNNA_HEARTBEAT_INTERVAL='10' \
                 -e KUNNA_TRAFFIC_PORT='9000' \
+                {static_routes_env} \
                 kunna/agent:latest"""
             
             if docker_network:
@@ -251,8 +274,8 @@ class SSHDeployer:
                 print(error)
                 return False
             
-            # Si está en red WireGuard, agregar ruta al rango VPN
-            if docker_network == "my_docker_network" or docker_network == "containers":
+            # Si está en red Docker específica (no host), intentar configurar rutas VPN si es necesario
+            if docker_network and docker_network != "host" and (docker_network == "my_docker_network" or docker_network == "containers"):
                 print("🛣️  Configurando ruta a red WireGuard (10.x.x.0/24)...")
                 wg_gateway_cmd = f"{docker_cmd} inspect wg-easy --format '{{{{range .NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}}'"
                 exit_code, wg_ip, _ = self.execute_command(wg_gateway_cmd)
