@@ -233,7 +233,9 @@ kuNNA viene con estos servicios por defecto:
 ## � Documentación
 
 Para información detallada sobre el proyecto, consulta la documentación en la carpeta [docs/](docs/):
-- **[Architecture & Design](docs/ARCHITECTURE.md)** - **Documentación Definitiva** con diagramas de funcionamiento.- **[API Documentation](docs/API.md)** - Documentación completa de la API REST
+- **[Architecture & Design](docs/ARCHITECTURE.md)** - **Documentación Definitiva** con diagramas de funcionamiento.
+- **[SSH Deployment Detail](docs/SSH_DEPLOYMENT_DETAIL.md)** - Detalle técnico de IPs, puertos y ruteo remoto.
+- **[API Documentation](docs/API.md)** - Documentación completa de la API REST
 - **[Integration Guide](docs/INTEGRATION.md)** - Guías de integración
 - **[Traffic Monitoring](docs/TRAFFIC_MONITORING.md)** - Sistema de monitoreo de tráfico
 - **[Remote Agents](docs/REMOTE_AGENT_PLAN.md)** - Arquitectura de agentes remotos

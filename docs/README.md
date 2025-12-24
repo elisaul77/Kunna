@@ -21,6 +21,7 @@ Este directorio contiene toda la documentación técnica del proyecto kuNNA.
 ## 🖥️ Agentes Remotos
 
 - [REMOTE_AGENT_PLAN.md](REMOTE_AGENT_PLAN.md) - Plan y arquitectura de agentes remotos
+- [SSH_DEPLOYMENT_DETAIL.md](SSH_DEPLOYMENT_DETAIL.md) - **Detalle Técnico**: Flujo de IPs, puertos y ruteo en despliegues SSH.
 
 ## 🏗️ Arquitectura y Diseño
 
