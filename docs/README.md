@@ -24,6 +24,7 @@ Este directorio contiene toda la documentación técnica del proyecto kuNNA.
 
 ## 🏗️ Arquitectura y Diseño
 
+- [ARCHITECTURE.md](ARCHITECTURE.md) - **Documentación Definitiva**: Arquitectura, flujos de datos y diagramas Mermaid.
 - [REDESIGN_V2.md](REDESIGN_V2.md) - Diseño y planificación de la versión 2
 
 ## 📁 Estructura del Proyecto
@@ -31,6 +32,7 @@ Este directorio contiene toda la documentación técnica del proyecto kuNNA.
 ```
 docs/
 ├── README.md                     # Este archivo (índice de documentación)
+├── ARCHITECTURE.md               # Arquitectura y funcionamiento (Diagramas)
 ├── API.md                        # Documentación de API
 ├── SWAGGER_GUIDE.md              # Guía de Swagger
 ├── HOW_TO_USE_SWAGGER.md         # Instrucciones de Swagger
