@@ -13,7 +13,7 @@ Esta guía te muestra cómo integrar nuevos servicios en kuNNA automáticamente 
 ### Opción 2: Script Bash
 ```bash
 cd /home/elisaul77/Documentos/Docker/kunna
-./add-service.sh
+./scripts/utilities/add-service.sh
 ```
 
 ### Opción 3: cURL directo

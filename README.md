@@ -187,6 +187,12 @@ kunna/
 │   ├── index.html          # Dashboard UI
 │   ├── nginx.conf          # Configuración Nginx
 │   └── Dockerfile
+├── scripts/                # Scripts y herramientas
+│   ├── utilities/          # Scripts de utilidad
+│   ├── tests/             # Scripts de pruebas
+│   ├── examples/          # Ejemplos de uso
+│   └── tools/             # Librerías y herramientas
+├── docs/                  # Documentación técnica
 ├── data/
 │   └── services.json       # Base de datos (auto-generada)
 ├── docker-compose.yml
@@ -224,7 +230,28 @@ kuNNA viene con estos servicios por defecto:
 - **MLflow** (http://localhost:5000) - Tracking de ML
 - **kuNNA Dashboard** (http://localhost:3000) - Este dashboard
 
-## 🚀 Próximas Características
+## � Documentación
+
+Para información detallada sobre el proyecto, consulta la documentación en la carpeta [docs/](docs/):
+
+- **[API Documentation](docs/API.md)** - Documentación completa de la API REST
+- **[Integration Guide](docs/INTEGRATION.md)** - Guías de integración
+- **[Traffic Monitoring](docs/TRAFFIC_MONITORING.md)** - Sistema de monitoreo de tráfico
+- **[Remote Agents](docs/REMOTE_AGENT_PLAN.md)** - Arquitectura de agentes remotos
+- **[Swagger Guide](docs/SWAGGER_GUIDE.md)** - Cómo usar Swagger UI
+
+Ver el [índice completo de documentación](docs/README.md) para más detalles.
+## 🛠️ Scripts y Herramientas
+
+El proyecto incluye varios scripts útiles organizados en la carpeta [scripts/](scripts/):
+
+- **[Utilidades](scripts/utilities/)** - Scripts de automatización (`add-service.sh`)
+- **[Pruebas](scripts/tests/)** - Scripts de testing (`test_traffic.py`)
+- **[Ejemplos](scripts/examples/)** - Demos y ejemplos de uso
+- **[Herramientas](scripts/tools/)** - Librerías como `kunna_tracer.py`
+
+Ver la [documentación de scripts](scripts/README.md) para detalles completos.
+## �🚀 Próximas Características
 
 - [ ] Sistema de autenticación
 - [ ] Temas claro/oscuro

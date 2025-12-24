@@ -98,5 +98,165 @@
     "is_remote": false,
     "server_id": null,
     "server_hostname": null
+  },
+  {
+    "id": "6",
+    "name": "airflow_redis_1",
+    "description": "Contenedor Docker: redis:7.2-bookworm",
+    "url": "#",
+    "icon": "🔴",
+    "category": "Databases",
+    "color": "#336791",
+    "isActive": true,
+    "status": "running",
+    "container_id": "0a570d9805e3",
+    "app_group": "airflow",
+    "networks": [
+      "airflow_default"
+    ],
+    "createdAt": "2025-12-23T18:53:58.170521",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
+  },
+  {
+    "id": "7",
+    "name": "airflow_postgres_1",
+    "description": "Contenedor Docker: postgres:16",
+    "url": "#",
+    "icon": "🐘",
+    "category": "Databases",
+    "color": "#336791",
+    "isActive": true,
+    "status": "running",
+    "container_id": "35d773ae7eaf",
+    "app_group": "airflow",
+    "networks": [
+      "airflow_default"
+    ],
+    "createdAt": "2025-12-23T18:53:58.173738",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
+  },
+  {
+    "id": "8",
+    "name": "airflow_airflow-init_1",
+    "description": "Contenedor Docker: apache/airflow:3.1.5",
+    "url": "#",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": false,
+    "status": "exited",
+    "container_id": "c80842453bc8",
+    "app_group": "airflow",
+    "networks": [
+      "airflow_default"
+    ],
+    "createdAt": "2025-12-23T18:54:08.211304",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
+  },
+  {
+    "id": "9",
+    "name": "airflow_airflow-dag-processor_1",
+    "description": "Contenedor Docker: apache/airflow:3.1.5",
+    "url": "#",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "container_id": "5a8e881a11e6",
+    "app_group": "airflow",
+    "networks": [
+      "airflow_default"
+    ],
+    "createdAt": "2025-12-23T18:55:58.643240",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
+  },
+  {
+    "id": "10",
+    "name": "airflow_airflow-scheduler_1",
+    "description": "Contenedor Docker: apache/airflow:3.1.5",
+    "url": "#",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "container_id": "c78fe7a1b6be",
+    "app_group": "airflow",
+    "networks": [
+      "airflow_default"
+    ],
+    "createdAt": "2025-12-23T18:55:58.647170",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
+  },
+  {
+    "id": "11",
+    "name": "airflow_airflow-triggerer_1",
+    "description": "Contenedor Docker: apache/airflow:3.1.5",
+    "url": "#",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "container_id": "df38a291c894",
+    "app_group": "airflow",
+    "networks": [
+      "airflow_default"
+    ],
+    "createdAt": "2025-12-23T18:55:58.650276",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
+  },
+  {
+    "id": "12",
+    "name": "airflow_airflow-apiserver_1",
+    "description": "Contenedor Docker: apache/airflow:3.1.5",
+    "url": "http://localhost:8081",
+    "icon": "🔌",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "container_id": "479673fabcf0",
+    "app_group": "airflow",
+    "networks": [
+      "airflow_default"
+    ],
+    "createdAt": "2025-12-23T19:00:09.850985",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
+  },
+  {
+    "id": "13",
+    "name": "airflow_airflow-worker_1",
+    "description": "Contenedor Docker: apache/airflow:3.1.5",
+    "url": "#",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "container_id": "da20d7c4caac",
+    "app_group": "airflow",
+    "networks": [
+      "airflow_default"
+    ],
+    "createdAt": "2025-12-23T19:00:29.962459",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
   }
 ]

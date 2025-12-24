@@ -223,7 +223,7 @@ func (w *statusWriter) WriteHeader(code int) {
 
 ## 📋 Opción 2: Cliente Python Simplificado
 
-Crea un archivo `kunna_tracer.py` en tu proyecto:
+Puedes usar el archivo `scripts/tools/kunna_tracer.py` del proyecto o crear uno simplificado en tu proyecto:
 
 ```python
 import requests

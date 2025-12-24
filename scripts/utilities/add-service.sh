@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script para agregar servicios a kuNNA via API
-# Uso: ./add-service.sh
+# Uso: ./scripts/utilities/add-service.sh
 
 API_URL="http://localhost:8000/api/services"
 
