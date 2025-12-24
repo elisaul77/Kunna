@@ -258,25 +258,5 @@
     "is_remote": false,
     "server_id": null,
     "server_hostname": null
-  },
-  {
-    "id": "14",
-    "name": "cranky_shockley",
-    "description": "Contenedor Docker: unknown",
-    "url": "#",
-    "icon": "🐳",
-    "category": "Docker Services",
-    "color": "#2496ed",
-    "isActive": true,
-    "status": "running",
-    "container_id": "436433be1014",
-    "app_group": "uncategorized",
-    "networks": [
-      "bridge"
-    ],
-    "createdAt": "2025-12-24T17:13:23.124778",
-    "is_remote": false,
-    "server_id": null,
-    "server_hostname": null
   }
 ]

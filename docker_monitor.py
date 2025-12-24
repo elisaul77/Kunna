@@ -8,10 +8,12 @@ import docker
 import requests
 import time
 import sys
+import os
 from datetime import datetime
 
 # Configuración
-KUNNA_API = "http://kunna-backend:8000/api/services"
+KUNNA_API_BASE = os.getenv("KUNNA_API_URL", "http://localhost:8000/api")
+KUNNA_API = f"{KUNNA_API_BASE}/services"
 SCAN_INTERVAL = 10  # Segundos entre escaneos
 DEBUG = True
 
@@ -254,6 +256,16 @@ def sync_containers():
         # Registrar en kuNNA
         register_service(service_data)
 
+    # Detectar servicios locales que ya no existen en Docker
+    container_names = {c['name'] for c in containers}
+    for name, existing in existing_services.items():
+        # Solo procesar servicios locales (no remotos) que tengan container_id
+        # Si no está en la lista de contenedores actuales, es que fue eliminado (docker rm)
+        if not existing.get('is_remote') and existing.get('container_id'):
+            if name not in container_names:
+                log(f"🗑️ El contenedor {name} ya no existe en el host local. Eliminando servicio de kuNNA.")
+                delete_service_api(existing['id'])
+
 def update_service_status(service_id, status):
     """Actualiza el estado de un servicio"""
     try:
@@ -284,6 +296,22 @@ def patch_service(service_id, updates):
         return False
     except Exception as e:
         log(f"Error actualizando servicio {service_id}: {e}", "ERROR")
+        return False
+
+def delete_service_api(service_id):
+    """Elimina un servicio de kuNNA (DELETE)"""
+    try:
+        response = requests.delete(
+            f"{KUNNA_API}/{service_id}",
+            timeout=5,
+        )
+        if response.status_code == 200:
+            log(f"🗑️ Servicio {service_id} eliminado de kuNNA")
+            return True
+        log(f"⚠️ No se pudo eliminar servicio {service_id}: {response.text}", "WARNING")
+        return False
+    except Exception as e:
+        log(f"Error eliminando servicio {service_id}: {e}", "ERROR")
         return False
 
 def monitor_loop():
