@@ -55,7 +55,7 @@ Durante el comando `docker run`, el backend inyecta las siguientes variables cr�
 kuNNA soporta tres modos de red para adaptarse a cualquier infraestructura:
 
 ### 1. Modo Bridge (Default)
-El agente corre en una red aislada. Si se especifica una red personalizada (ej: `my_docker_network`), el backend detecta automáticamente el Gateway de esa red para configurar rutas estáticas si es necesario.
+El agente corre en una red aislada. Si se especifica una red personalizada (ej: `mi_red_docker`), el backend detecta automáticamente el Gateway de esa red para configurar rutas estáticas si es necesario.
 
 ### 2. Modo Host
 Recomendado para servidores donde se quiere monitorear todas las interfaces de red directamente. El agente tendrá la misma IP que el servidor físico.
@@ -75,17 +75,17 @@ Esto garantiza que, incluso si el contenedor se reinicia, la conexión hacia el 
 
 ## 🌐 Escenario: Monitoreo a través de Internet (Sin VPN)
 
-Este es el escenario que planteas: Tu **PC en casa** (detrás de un router) y un **Servidor en Google Cloud**.
+Este es el escenario que planteas: Tu **PC en casa** (detrás de un router) y un **Servidor en la Nube**.
 
 ### El Problema: El Muro del Router (NAT)
-Tu servidor en Google Cloud no puede "ver" tu PC de casa directamente porque tu router bloquea las conexiones entrantes por seguridad.
+Tu servidor remoto no puede "ver" tu PC de casa directamente porque tu router bloquea las conexiones entrantes por seguridad.
 
 ### La Solución: "Llamada a Casa" (Reverse Connection)
 kuNNA está diseñado para que el **Agente sea quien inicie la conexión**. Sin embargo, para que esto funcione, tu PC de casa debe ser "visible" en Internet.
 
 ```mermaid
 graph LR
-    subgraph "Google Cloud (Remoto)"
+    subgraph "Cloud (Remoto)"
         Agent[kuNNA Agent]
     end
 
@@ -106,7 +106,7 @@ graph LR
 
 ### 🛠️ ¿Cómo configurarlo en la vida real?
 
-Tienes dos opciones principales para que el servidor de Google encuentre tu casa:
+Tienes dos opciones principales para que el servidor remoto encuentre tu casa:
 
 #### Opción A: Port Forwarding (Tradicional)
 1.  **En tu Router**: Configura una regla de "Port Forwarding" para que todo lo que llegue al puerto `8000` (API) y `3000` (Frontend) se redirija a la IP local de tu PC.
@@ -124,16 +124,16 @@ Si no quieres abrir puertos en tu router, puedes usar herramientas como **Cloudf
 ## 💡 Ejemplos Prácticos de Configuración
 
 ### Ejemplo 1: Red Local (Casa)
-*   **PC Casa**: `192.168.x.50`
-*   **Raspberry Pi**: `192.168.x.100`
-*   **Central URL**: `ws://192.168.x.50:8000`
+*   **PC Casa**: `192.168.x.x`
+*   **Raspberry Pi**: `192.168.x.y`
+*   **Central URL**: `ws://192.168.x.x:8000`
 *   **App en Raspberry**: Reporta a `http://localhost:9000`
 
-### Ejemplo 2: Servidor en Google Cloud (Vía Internet)
-*   **PC Casa (IP Pública)**: `187.20.30.40`
-*   **Servidor Google**: `34.120.x.x`
-*   **Central URL**: `ws://187.20.30.40:8000` (Requiere Port Forwarding en el router de casa)
-*   **App en Google**: Reporta a `http://localhost:9000` (El agente local en Google recibe el tráfico y lo reenvía a tu casa por el túnel que él mismo abrió).
+### Ejemplo 2: Servidor en la Nube (Vía Internet)
+*   **PC Casa (IP Pública)**: `IP_PUBLICA_CASA`
+*   **Servidor Nube**: `IP_PUBLICA_REMOTA`
+*   **Central URL**: `ws://IP_PUBLICA_CASA:8000` (Requiere Port Forwarding en el router de casa)
+*   **App en Nube**: Reporta a `http://localhost:9000`
 
 ---
 

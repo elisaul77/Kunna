@@ -52,7 +52,7 @@ done
 # Validar argumentos
 if [ -z "$CENTRAL_URL" ]; then
     log_error "Se requiere --central=IP:PORT"
-    echo "Uso: $0 --central=192.168.x.1:8000 --token=YOUR_TOKEN"
+    echo "Uso: $0 --central=192.168.x.x:8000 --token=YOUR_TOKEN"
     exit 1
 fi
 

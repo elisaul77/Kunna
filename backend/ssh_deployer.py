@@ -246,8 +246,9 @@ class SSHDeployer:
                     
                     if exit_code == 0 and wg_ip.strip():
                         wg_ip = wg_ip.strip()
-                        static_routes_env = f"-e KUNNA_STATIC_ROUTES='10.x.x.0/24 via {wg_ip}'"
-                        print(f"✅ Ruta estática inyectada: 10.x.x.0/24 via {wg_ip}")
+                        # Inyectar ruta estática (ejemplo genérico 10.0.0.0/8)
+                        static_routes_env = f"-e KUNNA_STATIC_ROUTES='10.0.0.0/8 via {wg_ip}'"
+                        print(f"✅ Ruta estática inyectada vía {wg_ip}")
 
             run_cmd = f"""{docker_cmd} run -d \
                 --name kunna-agent \
@@ -275,19 +276,10 @@ class SSHDeployer:
                 return False
             
             # Si está en red Docker específica (no host), intentar configurar rutas VPN si es necesario
-            if docker_network and docker_network != "host" and (docker_network == "my_docker_network" or docker_network == "containers"):
-                print("🛣️  Configurando ruta a red WireGuard (10.x.x.0/24)...")
-                wg_gateway_cmd = f"{docker_cmd} inspect wg-easy --format '{{{{range .NetworkSettings.Networks}}}}{{{{.IPAddress}}}}{{{{end}}}}'"
-                exit_code, wg_ip, _ = self.execute_command(wg_gateway_cmd)
-                
-                if exit_code == 0 and wg_ip.strip():
-                    wg_ip = wg_ip.strip()
-                    print(f"   Gateway WireGuard: {wg_ip}")
-                    
-                    # Agregar ruta en el contenedor del agente
-                    route_cmd = f"{docker_cmd} exec kunna-agent ip route add 10.x.x.0/24 via {wg_ip} || true"
-                    self.execute_command(route_cmd)
-                    print("✅ Ruta WireGuard configurada")
+            if docker_network and docker_network != "host":
+                # Buscar gateway de la red para ruteo persistente
+                print("🛣️  Configurando rutas de red adicionales si es necesario...")
+                # (La lógica de KUNNA_STATIC_ROUTES arriba ya maneja esto de forma persistente)
             
             # Verificar que esté corriendo
             print("⏳ Verificando despliegue...")
