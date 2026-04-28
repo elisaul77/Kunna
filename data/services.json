@@ -7,8 +7,8 @@
     "icon": "🤖",
     "category": "ML & AI",
     "color": "#0194e2",
-    "isActive": true,
-    "status": "running",
+    "isActive": false,
+    "status": "exited",
     "container_id": "4100aceaf679",
     "app_group": "mlflow",
     "networks": [
@@ -49,10 +49,10 @@
     "color": "#2496ed",
     "isActive": true,
     "status": "running",
-    "container_id": "7c2b1f2c5650",
+    "container_id": "e83cd0e6a2ad",
     "app_group": "kunna",
     "networks": [
-      "kunna_kunna-network"
+      "host"
     ],
     "createdAt": "2025-12-15T01:53:20.705724",
     "is_remote": false,
@@ -63,16 +63,16 @@
     "id": "4",
     "name": "kunna-backend",
     "description": "Contenedor Docker: kunna_backend:latest",
-    "url": "http://localhost:8000",
+    "url": "#",
     "icon": "⚙️",
     "category": "Docker Services",
     "color": "#2496ed",
     "isActive": true,
     "status": "running",
-    "container_id": "550a7a29050b",
+    "container_id": "813bc1512bb4",
     "app_group": "kunna",
     "networks": [
-      "kunna_kunna-network"
+      "host"
     ],
     "createdAt": "2025-12-15T01:53:20.718872",
     "is_remote": false,
@@ -109,7 +109,7 @@
     "color": "#336791",
     "isActive": true,
     "status": "running",
-    "container_id": "0a570d9805e3",
+    "container_id": "bc28d84f7e85",
     "app_group": "airflow",
     "networks": [
       "airflow_default"
@@ -129,7 +129,7 @@
     "color": "#336791",
     "isActive": true,
     "status": "running",
-    "container_id": "35d773ae7eaf",
+    "container_id": "75d530152ec0",
     "app_group": "airflow",
     "networks": [
       "airflow_default"
@@ -169,7 +169,7 @@
     "color": "#2496ed",
     "isActive": true,
     "status": "running",
-    "container_id": "5a8e881a11e6",
+    "container_id": "e1ba00843eda",
     "app_group": "airflow",
     "networks": [
       "airflow_default"
@@ -189,7 +189,7 @@
     "color": "#2496ed",
     "isActive": true,
     "status": "running",
-    "container_id": "c78fe7a1b6be",
+    "container_id": "cf15a2b1ebc5",
     "app_group": "airflow",
     "networks": [
       "airflow_default"
@@ -209,7 +209,7 @@
     "color": "#2496ed",
     "isActive": true,
     "status": "running",
-    "container_id": "df38a291c894",
+    "container_id": "94c391024d86",
     "app_group": "airflow",
     "networks": [
       "airflow_default"
@@ -229,7 +229,7 @@
     "color": "#2496ed",
     "isActive": true,
     "status": "running",
-    "container_id": "479673fabcf0",
+    "container_id": "163e70321a84",
     "app_group": "airflow",
     "networks": [
       "airflow_default"
@@ -249,12 +249,152 @@
     "color": "#2496ed",
     "isActive": true,
     "status": "running",
-    "container_id": "da20d7c4caac",
+    "container_id": "3d82bed31f80",
     "app_group": "airflow",
     "networks": [
       "airflow_default"
     ],
     "createdAt": "2025-12-23T19:00:29.962459",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
+  },
+  {
+    "id": "14",
+    "name": "clever_volhard",
+    "description": "Contenedor Docker: unknown",
+    "url": "#",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": false,
+    "status": "exited",
+    "container_id": "654e588d3521",
+    "app_group": "uncategorized",
+    "networks": [
+      "bridge"
+    ],
+    "createdAt": "2025-12-29T03:50:46.117454",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
+  },
+  {
+    "id": "15",
+    "name": "llmquenwharer_llm-qwen_1",
+    "description": "Contenedor Docker: llmquenwharer_llm-qwen:latest",
+    "url": "http://localhost:8989",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": false,
+    "status": "exited",
+    "container_id": "1cfd053e4a55",
+    "app_group": "llmquenwharer",
+    "networks": [
+      "llmquenwharer_default"
+    ],
+    "createdAt": "2025-12-29T05:31:25.211355",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
+  },
+  {
+    "id": "16",
+    "name": "kong-migrations",
+    "description": "Contenedor Docker: kong:3.4",
+    "url": "#",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": false,
+    "status": "exited",
+    "container_id": "770b86d104dc",
+    "app_group": "kong-gateway",
+    "networks": [
+      "kong-gateway_kong-net"
+    ],
+    "createdAt": "2026-01-16T04:04:33.333843",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
+  },
+  {
+    "id": "17",
+    "name": "kong-database",
+    "description": "Contenedor Docker: postgres:13",
+    "url": "#",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "container_id": "92112eeec1f5",
+    "app_group": "kong-gateway",
+    "networks": [
+      "kong-gateway_kong-net"
+    ],
+    "createdAt": "2026-01-16T04:04:33.336495",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
+  },
+  {
+    "id": "18",
+    "name": "kong-gateway",
+    "description": "Contenedor Docker: kong:3.4",
+    "url": "http://localhost:8080",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "container_id": "609d16787896",
+    "app_group": "kong-gateway",
+    "networks": [
+      "kong-gateway_kong-net"
+    ],
+    "createdAt": "2026-01-16T04:05:43.742482",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
+  },
+  {
+    "id": "19",
+    "name": "konga",
+    "description": "Contenedor Docker: pantsel/konga:latest",
+    "url": "http://localhost:1337",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": true,
+    "status": "running",
+    "container_id": "7b0d3b48e62d",
+    "app_group": "kong-gateway",
+    "networks": [
+      "kong-gateway_kong-net"
+    ],
+    "createdAt": "2026-01-16T04:13:36.505518",
+    "is_remote": false,
+    "server_id": null,
+    "server_hostname": null
+  },
+  {
+    "id": "20",
+    "name": "swagger-central",
+    "description": "Contenedor Docker: swaggerapi/swagger-ui:latest",
+    "url": "http://localhost:8082",
+    "icon": "🐳",
+    "category": "Docker Services",
+    "color": "#2496ed",
+    "isActive": false,
+    "status": "exited",
+    "container_id": "cd264c2465d1",
+    "app_group": "api-docs",
+    "networks": [
+      "api-docs_default"
+    ],
+    "createdAt": "2026-01-16T04:38:45.750388",
     "is_remote": false,
     "server_id": null,
     "server_hostname": null

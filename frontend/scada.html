@@ -8,17 +8,17 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         :root {
-            --bg-primary: #0f0f23;
-            --bg-secondary: #1a1a2e;
-            --bg-card: #16213e;
-            --accent-primary: #00d4ff;
-            --accent-secondary: #a855f7;
-            --text-primary: #ffffff;
-            --text-secondary: #94a3b8;
-            --border-color: #2d3748;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
+            --bg-primary: #0D1321;
+            --bg-secondary: #141e2e;
+            --bg-card: #1a283a;
+            --accent-primary: #77BA99;
+            --accent-secondary: #FF595E;
+            --text-primary: #EFF0D1;
+            --text-secondary: #598392;
+            --border-color: rgba(89,131,146,0.3);
+            --success: #77BA99;
+            --warning: #598392;
+            --danger: #FF595E;
         }
 
         * {
@@ -399,18 +399,18 @@
         }
 
         .control-btn.start:hover:not(:disabled) {
-            background: #10b981;
-            border-color: #10b981;
+            background: #77BA99;
+            border-color: #77BA99;
         }
 
         .control-btn.stop:hover:not(:disabled) {
-            background: #f59e0b;
-            border-color: #f59e0b;
+            background: #598392;
+            border-color: #598392;
         }
 
         .control-btn.restart:hover:not(:disabled) {
-            background: #3b82f6;
-            border-color: #3b82f6;
+            background: #598392;
+            border-color: #598392;
         }
     </style>
 </head>
@@ -434,7 +434,7 @@
                 <label for="showAgentCheckbox">Mostrar kunna-agent</label>
             </div>
             <a href="/" class="btn">📊 Dashboard</a>
-            <a href="/servers.html" class="btn" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">🖥️ Servidores</a>
+            <a href="/servers.html" class="btn" style="background: linear-gradient(135deg, #FF595E, #77BA99);">🖥️ Servidores</a>
             <button class="btn" onclick="refreshTopology()">🔄 Actualizar</button>
         </div>
     </div>
@@ -640,7 +640,7 @@
             // Línea base del enlace
             linkElements.append('path')
                 .attr('class', 'link')
-                .attr('stroke', '#00d4ff')
+                .attr('stroke', '#77BA99')
                 .attr('stroke-width', 3)
                 .attr('stroke-opacity', 0.4)
                 .attr('fill', 'none');
@@ -649,9 +649,9 @@
             linkElements.append('circle')
                 .attr('class', 'link-particle')
                 .attr('r', 4)
-                .attr('fill', '#00d4ff')
+                .attr('fill', '#77BA99')
                 .attr('opacity', 0)
-                .style('filter', 'drop-shadow(0 0 4px #00d4ff)');
+                .style('filter', 'drop-shadow(0 0 4px #77BA99)');
 
             // NO iniciar animación simulada - solo tráfico real
             // startParticleAnimation(); // ← DESHABILITADO
@@ -691,7 +691,7 @@
                 .append('text')
                 .attr('class', 'node-remote-badge')
                 .attr('dy', 85)
-                .style('fill', '#a855f7')
+                .style('fill', '#FF595E')
                 .text(d => `🌐 ${d.server_hostname || ''}`);
 
             // Badge de estado
@@ -764,11 +764,11 @@
 
         function getStatusColor(status) {
             const colors = {
-                'running': '#10b981',
-                'exited': '#ef4444',
-                'paused': '#f59e0b'
+                'running': '#77BA99',
+                'exited': '#FF595E',
+                'paused': '#598392'
             };
-            return colors[status] || '#6b7280';
+            return colors[status] || '#598392';
         }
 
         function onNodeClick(event, d) {
@@ -1137,7 +1137,7 @@
             
             newLinkGroup.append('path')
                 .attr('class', 'link')
-                .attr('stroke', '#00d4ff')
+                .attr('stroke', '#77BA99')
                 .attr('stroke-width', 3)
                 .attr('stroke-opacity', 0.3)
                 .attr('stroke-dasharray', '5,5')
@@ -1146,9 +1146,9 @@
             newLinkGroup.append('circle')
                 .attr('class', 'link-particle')
                 .attr('r', 4)
-                .attr('fill', '#00d4ff')
+                .attr('fill', '#77BA99')
                 .attr('opacity', 0)
-                .style('filter', 'drop-shadow(0 0 4px #00d4ff)');
+                .style('filter', 'drop-shadow(0 0 4px #77BA99)');
             
             console.log(`🔗 Link temporal creado: ${fromNode.name} ↔ ${toNode.name}`);
             
@@ -1193,10 +1193,10 @@
 
         function animateRealTraffic(link, event) {
             // Determinar color según status code
-            let color = '#00d4ff'; // default
-            if (event.status >= 200 && event.status < 300) color = '#10b981'; // success
-            else if (event.status >= 400 && event.status < 500) color = '#f59e0b'; // warning
-            else if (event.status >= 500) color = '#ef4444'; // error
+            let color = '#77BA99'; // default
+            if (event.status >= 200 && event.status < 300) color = '#77BA99'; // success
+            else if (event.status >= 400 && event.status < 500) color = '#598392'; // warning
+            else if (event.status >= 500) color = '#FF595E'; // error
             
             // Encontrar el grupo del link
             const linkElement = d3.selectAll('.link-group')
@@ -1250,7 +1250,7 @@
                     .attr('stroke-width', 5)
                     .transition()
                     .duration(1000)
-                    .attr('stroke', '#00d4ff')
+                    .attr('stroke', '#77BA99')
                     .attr('stroke-opacity', 0.4)
                     .attr('stroke-width', 3);
             }

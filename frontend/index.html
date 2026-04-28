@@ -7,18 +7,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #0f0f23;
-            --bg-secondary: #1a1a2e;
-            --bg-card: #16213e;
-            --accent-primary: #00d4ff;
-            --accent-secondary: #a855f7;
-            --text-primary: #ffffff;
-            --text-secondary: #94a3b8;
-            --border-color: #2d3748;
+            --bg-primary: #0D1321;
+            --bg-secondary: #141e2e;
+            --bg-card: #1a283a;
+            --accent-primary: #77BA99;
+            --accent-secondary: #FF595E;
+            --text-primary: #EFF0D1;
+            --text-secondary: #598392;
+            --border-color: rgba(89,131,146,0.3);
             --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
             --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
             --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-            --glow: 0 0 20px rgba(0, 212, 255, 0.3);
+            --glow: 0 0 20px rgba(119,186,153,0.3);
         }
 
         * {
@@ -31,10 +31,10 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: var(--bg-primary);
             background-image: 
-                radial-gradient(at 0% 0%, rgba(168, 85, 247, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, rgba(0, 212, 255, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.15) 0px, transparent 50%),
-                radial-gradient(at 0% 100%, rgba(0, 212, 255, 0.15) 0px, transparent 50%);
+                radial-gradient(at 0% 0%, rgba(255, 89, 94, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(119, 186, 153, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(255, 89, 94, 0.15) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(119, 186, 153, 0.15) 0px, transparent 50%);
             min-height: 100vh;
             padding: 20px;
             color: var(--text-primary);
@@ -83,7 +83,6 @@
             border: 1px solid var(--border-color);
             backdrop-filter: blur(10px);
         }
-        }
 
         .search-box {
             flex: 1;
@@ -105,7 +104,7 @@
         .search-box input:focus {
             outline: none;
             border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+            box-shadow: 0 0 0 3px rgba(119, 186, 153, 0.1);
         }
 
         .search-box input::placeholder {
@@ -234,14 +233,14 @@
         .remote-badge {
             display: inline-block;
             padding: 4px 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #598392 0%, #FF595E 100%);
             color: white;
             border-radius: 6px;
             font-size: 0.75em;
             margin-bottom: 12px;
             font-weight: 600;
             letter-spacing: 0.5px;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 2px 8px rgba(89, 131, 146, 0.3);
         }
 
         .service-category {
@@ -294,36 +293,36 @@
         }
 
         .btn-edit:hover {
-            background: #10b981;
-            border-color: #10b981;
+            background: #77BA99;
+            border-color: #77BA99;
             color: white;
             transform: translateY(-2px);
         }
 
         .btn-delete:hover {
-            background: #ef4444;
-            border-color: #ef4444;
+            background: #FF595E;
+            border-color: #FF595E;
             color: white;
             transform: translateY(-2px);
         }
 
         .btn-start:hover {
-            background: #10b981;
-            border-color: #10b981;
+            background: #77BA99;
+            border-color: #77BA99;
             color: white;
             transform: translateY(-2px);
         }
 
         .btn-stop:hover {
-            background: #f59e0b;
-            border-color: #f59e0b;
+            background: #598392;
+            border-color: #598392;
             color: white;
             transform: translateY(-2px);
         }
 
         .btn-restart:hover {
-            background: #3b82f6;
-            border-color: #3b82f6;
+            background: #598392;
+            border-color: #598392;
             color: white;
             transform: translateY(-2px);
         }
@@ -343,18 +342,18 @@
         }
 
         .status-running {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
+            background: rgba(119, 186, 153, 0.2);
+            color: #77BA99;
         }
 
         .status-exited, .status-stopped {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
+            background: rgba(255, 89, 94, 0.2);
+            color: #FF595E;
         }
 
         .status-paused {
-            background: rgba(245, 158, 11, 0.2);
-            color: #f59e0b;
+            background: rgba(89, 131, 146, 0.2);
+            color: #598392;
         }
 
         .modal {
@@ -365,7 +364,7 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(15, 15, 35, 0.95);
+            background-color: rgba(13, 19, 33, 0.95);
             backdrop-filter: blur(8px);
             animation: fadeIn 0.3s;
         }
@@ -423,7 +422,7 @@
         .form-group select:focus {
             outline: none;
             border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+            box-shadow: 0 0 0 3px rgba(119, 186, 153, 0.1);
         }
 
         .form-group input[type="color"] {
@@ -581,7 +580,7 @@
                 <button class="filter-btn active" data-category="all">Todos</button>
             </div>
             <a href="/scada.html" class="btn-add" style="text-decoration: none; display: inline-block; margin-right: 12px;">🎯 Vista SCADA</a>
-            <a href="/servers.html" class="btn-add" style="text-decoration: none; display: inline-block; margin-right: 12px; background: linear-gradient(135deg, #7c3aed, #a855f7);">🖥️ Servidores Remotos</a>
+            <a href="/servers.html" class="btn-add" style="text-decoration: none; display: inline-block; margin-right: 12px; background: linear-gradient(135deg, #FF595E, #77BA99);">🖥️ Servidores Remotos</a>
             <button class="btn-add" onclick="openModal()">➕ Agregar Servicio</button>
         </div>
 
@@ -624,7 +623,7 @@
 
                 <div class="form-group">
                     <label for="serviceColor">Color</label>
-                    <input type="color" id="serviceColor" value="#3b82f6">
+                    <input type="color" id="serviceColor" value="#598392">
                 </div>
 
                 <div class="form-actions">
@@ -762,7 +761,7 @@
                 document.getElementById('serviceUrl').value = service.url;
                 document.getElementById('serviceIcon').value = service.icon || '🔗';
                 document.getElementById('serviceCategory').value = service.category;
-                document.getElementById('serviceColor').value = service.color || '#3b82f6';
+                document.getElementById('serviceColor').value = service.color || '#598392';
             } else {
                 title.textContent = 'Agregar Servicio';
                 form.reset();
