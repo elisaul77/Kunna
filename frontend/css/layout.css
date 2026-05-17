@@ -89,11 +89,26 @@
 .connection-dot.connected {
   background: var(--success);
   box-shadow: 0 0 8px var(--success);
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .connection-dot.disconnected {
   background: var(--danger);
   box-shadow: 0 0 8px var(--danger);
+}
+
+/* Connection dot pulse animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 8px var(--success);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+    box-shadow: 0 0 12px var(--success);
+  }
 }
 
 /* Sidebar Navigation */
@@ -136,13 +151,15 @@
 
 .sidebar-nav a:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(2px);
 }
 
 .sidebar-nav a.active {
   color: var(--accent);
   background: rgba(34, 211, 238, 0.1);
-  border: 1px solid rgba(34, 211, 238, 0.2);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  transform: translateX(2px);
 }
 
 .sidebar-nav a.active .icon {

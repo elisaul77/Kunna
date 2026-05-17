@@ -3,18 +3,10 @@
  */
 import { jest } from '@jest/globals';
 
-// Mock utils before importing dashboard
+// Mock window.utils directly since dashboard uses window.utils.*
 const mockApi = jest.fn();
 const mockShowToast = jest.fn();
-const mockDebounce = jest.fn(fn => {
-  let called = false;
-  return function(...args) {
-    if (!called) {
-      called = true;
-      setTimeout(() => fn.apply(this, args), 0);
-    }
-  };
-});
+const mockDebounce = jest.fn(fn => fn);
 const mockEscapeHtml = (str) => {
   if (!str) return '';
   const div = document.createElement('div');
@@ -23,6 +15,18 @@ const mockEscapeHtml = (str) => {
 };
 const mockWsSend = jest.fn();
 const mockWsClose = jest.fn();
+const mockGetStatusColor = (status) => `var(--${status})`;
+
+global.window = global.window || {};
+global.window.utils = {
+  api: mockApi,
+  showToast: mockShowToast,
+  debounce: mockDebounce,
+  escapeHtml: mockEscapeHtml,
+  getStatusColor: mockGetStatusColor,
+  WS_URL: 'ws://localhost:8000',
+  API_URL: 'http://localhost:8000/api'
+};
 
 let mockWsInstance = {
   send: mockWsSend,
@@ -33,16 +37,6 @@ let mockWsInstance = {
 };
 
 global.WebSocket = jest.fn(() => mockWsInstance);
-
-jest.unstable_mockModule('../utils.js', () => ({
-  api: mockApi,
-  showToast: mockShowToast,
-  debounce: mockDebounce,
-  escapeHtml: mockEscapeHtml,
-  getStatusColor: (status) => `var(--${status})`,
-  WS_URL: 'ws://localhost:8000',
-  API_URL: 'http://localhost:8000/api'
-}));
 
 // Import after mocking
 const dashboardModule = await import('../js/views/dashboard.js');
@@ -179,7 +173,7 @@ describe('Dashboard View', () => {
       // Wait for debounce
       await new Promise(r => setTimeout(r, 400));
 
-      const visibleCards = document.querySelectorAll('.service-card:not([style*="display: none"])');
+      const visibleCards = document.querySelectorAll('.service-card');
       expect(visibleCards.length).toBe(1);
       expect(visibleCards[0].querySelector('.service-name').textContent).toContain('Web App');
     });
@@ -198,11 +192,11 @@ describe('Dashboard View', () => {
       await init();
 
       // Click on 'database' category chip
-      const chip = document.querySelector('.chip-category-database');
+      const chip = document.querySelector('[data-filter="category"][data-value="database"]');
       if (chip) {
         chip.click();
         
-        const visibleCards = document.querySelectorAll('.service-card:not([style*="display: none"])');
+        const visibleCards = document.querySelectorAll('.service-card');
         expect(visibleCards.length).toBe(1);
         expect(visibleCards[0].querySelector('.service-name').textContent).toContain('DB');
       }
@@ -222,11 +216,11 @@ describe('Dashboard View', () => {
       await init();
 
       // Click on 'stopped' status chip
-      const chip = document.querySelector('.chip-status-stopped');
+      const chip = document.querySelector('[data-filter="status"][data-value="stopped"]');
       if (chip) {
         chip.click();
         
-        const visibleCards = document.querySelectorAll('.service-card:not([style*="display: none"])');
+        const visibleCards = document.querySelectorAll('.service-card');
         expect(visibleCards.length).toBe(1);
         expect(visibleCards[0].querySelector('.service-name').textContent).toContain('Stopped');
       }
@@ -247,13 +241,12 @@ describe('Dashboard View', () => {
     test('disconnects WebSocket on cleanup', async () => {
       mockApi.mockResolvedValue([]);
       
-      const { render, init } = dashboardModule;
+      const { render, init, cleanup } = dashboardModule;
       document.getElementById('app-content').innerHTML = render();
       await init();
 
-      // Trigger cleanup by changing view
-      const event = new CustomEvent('dashboard:cleanup');
-      document.dispatchEvent(event);
+      // Call cleanup directly
+      cleanup();
 
       // WebSocket close should have been called
       expect(mockWsInstance.close).toHaveBeenCalled();

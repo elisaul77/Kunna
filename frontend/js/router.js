@@ -2,6 +2,7 @@
  * kuNNA SPA Router
  * History API based client-side routing with lazy loading
  */
+import { transitionOut, transitionIn } from './transitions.js';
 
 // Route definitions
 const routes = [
@@ -24,6 +25,9 @@ const routes = [
     view: () => import('./views/servers.js')
   }
 ];
+
+// Current view module reference for cleanup
+let currentViewModule = null;
 
 /**
  * Navigate to a path
@@ -50,11 +54,33 @@ async function loadView(path) {
   }
 
   try {
-    const viewModule = await route.view();
-    const main = document.getElementById('app-content');
-    if (main && viewModule.render) {
-      main.innerHTML = viewModule.render();
+    // Cleanup previous view if it has a cleanup function
+    if (currentViewModule && typeof currentViewModule.cleanup === 'function') {
+      currentViewModule.cleanup();
     }
+
+    const main = document.getElementById('app-content');
+
+    // Transition out current content
+    await transitionOut(main);
+
+    // Brief delay for smooth transition feel
+    await new Promise(r => setTimeout(r, 50));
+
+    // Load new view module
+    const viewModule = await route.view();
+
+    if (main && viewModule.render) {
+      // Set new content with transition
+      await transitionIn(main, () => viewModule.render());
+    }
+
+    // Call init after render if available
+    if (viewModule.init) {
+      await viewModule.init();
+    }
+    // Store current view module for cleanup
+    currentViewModule = viewModule;
     updateActiveNav(path);
     document.title = `${route.title} - kuNNA`;
   } catch (error) {
@@ -68,7 +94,6 @@ async function loadView(path) {
         </div>
       `;
     }
-    render404();
   }
 }
 

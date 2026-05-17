@@ -10,7 +10,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/design-system.css">
   <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/scada.css">
+  <link rel="stylesheet" href="css/servers.css">
+  <link rel="stylesheet" href="css/responsive.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2322D3EE' stroke-width='2'><path d='M22 12.5c-.5-1-2-2-4.5-2-1.5 0-3 .5-4.5 1.5L12 13l-1-1c-1.5-1-3-1.5-4.5-1.5-2.5 0-4 1-4.5 2-.5 1 0 2.5 1 3.5 1 1 2.5 1.5 4 1.5 2 0 3.5-1 4.5-2.5l.5-.5.5.5c1 1.5 2.5 2.5 4.5 2.5 1.5 0 3-.5 4-1.5 1-1 1.5-2.5 1-3.5z'/><path d='M12 13v8'/><path d='M8 16h8'/></svg>">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
   <!-- App Shell -->
@@ -56,10 +62,23 @@
     <main class="main">
       <div id="app-content"></div>
     </main>
-  </div>
 
-  <!-- Toast Container -->
-  <div id="toast-container"></div>
+    <!-- Mobile Tab Bar -->
+    <nav class="mobile-tab-bar">
+      <a href="/" data-route="/">
+        <svg class="icon"><use href="#icon-grid"></use></svg>
+        Dashboard
+      </a>
+      <a href="/scada" data-route="/scada">
+        <svg class="icon"><use href="#icon-activity"></use></svg>
+        SCADA
+      </a>
+      <a href="/servers" data-route="/servers">
+        <svg class="icon"><use href="#icon-server"></use></svg>
+        Servers
+      </a>
+    </nav>
+  </div>
 
   <!-- Scripts -->
   <script src="js/utils.js"></script>

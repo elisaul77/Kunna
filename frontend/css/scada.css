@@ -1,0 +1,726 @@
+/**
+ * kuNNA SCADA View Styles
+ * Glassmorphism + Neon D3.js Topology Visualization
+ */
+
+/* ===================================
+   SCADA View Container
+   =================================== */
+
+.scada-view {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  background: var(--bg-base);
+}
+
+/* ===================================
+   SCADA Toolbar
+   =================================== */
+
+.scada-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.scada-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.scada-logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.scada-stats {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.scada-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+}
+
+.scada-stat-value {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.scada-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.scada-search {
+  position: relative;
+}
+
+.scada-search input {
+  width: 200px;
+  padding: 0.5rem 0.875rem 0.5rem 2.25rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.875rem;
+  outline: none;
+  transition: all var(--transition);
+}
+
+.scada-search input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+}
+
+.scada-search input::placeholder {
+  color: var(--text-muted);
+}
+
+.scada-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* Toolbar toggles */
+.scada-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.scada-toggle:hover {
+  border-color: var(--accent);
+}
+
+.scada-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.scada-toggle label {
+  cursor: pointer;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+/* Toolbar buttons */
+.scada-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-decoration: none;
+}
+
+.scada-btn:hover {
+  background: var(--bg-glass);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.scada-btn:active {
+  transform: translateY(0);
+}
+
+.scada-btn.active {
+  background: var(--accent);
+  color: var(--bg-base);
+  border-color: var(--accent);
+}
+
+/* ===================================
+   SCADA Layout
+   =================================== */
+
+.scada-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ===================================
+   SCADA Sidebar
+   =================================== */
+
+.scada-sidebar {
+  width: 280px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.scada-sidebar-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.scada-sidebar-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.scada-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+/* Group list */
+.group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.group-item {
+  padding: 0.875rem 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.group-item:hover {
+  border-color: var(--accent);
+  transform: translateX(4px);
+  background: var(--bg-glass);
+}
+
+.group-item.active {
+  border-color: var(--accent);
+  background: rgba(34, 211, 238, 0.1);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.2);
+}
+
+.group-name {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--text);
+}
+
+.group-services-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ===================================
+   SCADA Canvas
+   =================================== */
+
+.scada-canvas {
+  flex: 1;
+  position: relative;
+  background: 
+    radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.03) 0%, transparent 50%),
+    var(--bg-base);
+  overflow: hidden;
+}
+
+/* Grid background pattern */
+.scada-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+}
+
+#topology-svg {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+/* ===================================
+   SCADA Legend
+   =================================== */
+
+.scada-legend {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  z-index: 100;
+  min-width: 140px;
+}
+
+.scada-legend.collapsed .scada-legend-content {
+  display: none;
+}
+
+.scada-legend-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  margin-bottom: 0.75rem;
+}
+
+.scada-legend-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.scada-legend-toggle {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.scada-legend-toggle:hover {
+  color: var(--text);
+}
+
+.scada-legend-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-running .legend-color {
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+}
+
+.legend-stopped .legend-color {
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+}
+
+.legend-paused .legend-color {
+  background: var(--warning);
+  box-shadow: 0 0 8px var(--warning);
+}
+
+/* ===================================
+   Node Control Panel
+   =================================== */
+
+.node-control-panel {
+  position: absolute;
+  top: 5rem;
+  right: 1.5rem;
+  width: 320px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  z-index: 1000;
+  display: none;
+}
+
+.node-control-panel.visible {
+  display: block;
+  animation: panelSlideIn 0.3s ease;
+}
+
+@keyframes panelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.control-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.control-panel-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.close-panel {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.close-panel:hover {
+  background: var(--bg-surface);
+  color: var(--text);
+}
+
+.control-panel-info {
+  padding: 1rem 1.25rem;
+}
+
+.control-panel-info p {
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.control-panel-info strong {
+  color: var(--text);
+}
+
+.control-panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Control buttons */
+.control-btn {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: var(--font);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.control-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.control-btn.start:hover:not(:disabled) {
+  background: var(--success);
+  border-color: var(--success);
+  color: var(--bg-base);
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.4);
+}
+
+.control-btn.stop:hover:not(:disabled) {
+  background: var(--bg-glass);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.control-btn.restart:hover:not(:disabled) {
+  background: var(--bg-glass);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ===================================
+   D3.js Topology Elements
+   =================================== */
+
+/* Node groups */
+.node {
+  cursor: move;
+  transition: opacity 0.3s ease;
+}
+
+.node:hover .node-circle {
+  filter: brightness(1.2);
+}
+
+/* Node circles with status colors */
+.node-circle {
+  transition: all 0.3s ease;
+}
+
+.node-running .node-circle {
+  fill: var(--success);
+  filter: drop-shadow(0 0 12px var(--success));
+}
+
+.node-stopped .node-circle {
+  fill: var(--danger);
+  filter: drop-shadow(0 0 8px var(--danger));
+}
+
+.node-paused .node-circle {
+  fill: var(--warning);
+  filter: drop-shadow(0 0 8px var(--warning));
+}
+
+.node-unknown .node-circle {
+  fill: var(--text-muted);
+  filter: drop-shadow(0 0 6px var(--text-muted));
+}
+
+/* Node icon text */
+.node-icon {
+  font-size: 24px;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* Node labels */
+.node-label {
+  fill: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* Remote badge */
+.node-remote-badge {
+  fill: var(--danger);
+  font-size: 10px;
+  font-weight: 500;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* Status badge */
+.status-badge {
+  stroke: var(--bg-surface);
+  stroke-width: 2;
+}
+
+/* Link groups */
+.link-group {
+  pointer-events: none;
+}
+
+.link {
+  /* stroke: url(#linkGradient); */
+  stroke: #22D3EE;
+  stroke-width: 3;
+  stroke-opacity: 0.8;
+  fill: none;
+  transition: stroke-opacity 0.3s ease;
+}
+
+.link.highlighted {
+  stroke-opacity: 0.8;
+}
+
+.link.dimmed {
+  stroke-opacity: 0.1;
+}
+
+/* Link particles */
+.link-particle {
+  pointer-events: none;
+}
+
+/* Temporary nodes */
+.temp-node .node-circle {
+  stroke-dasharray: 5, 5;
+  stroke-opacity: 0.6;
+}
+
+.temp-link {
+  stroke-dasharray: 5, 5;
+}
+
+/* ===================================
+   Custom Scrollbar
+   =================================== */
+
+.scada-sidebar ::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scada-sidebar ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scada-sidebar ::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.scada-sidebar ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ===================================
+   Toast notifications (reusing from design-system)
+   =================================== */
+
+#toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ===================================
+   Keyboard shortcuts hint
+   =================================== */
+
+.shortcuts-hint {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  z-index: 100;
+}
+
+.shortcuts-hint kbd {
+  padding: 0.125rem 0.375rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: monospace;
+  margin: 0 0.25rem;
+}
+
+/* ===================================
+   Responsive adjustments
+   =================================== */
+
+@media (max-width: 1024px) {
+  .scada-sidebar {
+    width: 240px;
+  }
+
+  .scada-search input {
+    width: 160px;
+  }
+}
+
+@media (max-width: 768px) {
+  .scada-toolbar {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .scada-stats {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .scada-sidebar {
+    display: none;
+  }
+
+  .node-control-panel {
+    right: 1rem;
+    width: calc(100% - 2rem);
+  }
+}
